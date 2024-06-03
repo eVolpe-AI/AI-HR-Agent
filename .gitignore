@@ -1,0 +1,8 @@
+models
+.rasa
+.vscode
+.env
+.conda
+__pycache__
+AccessToken.txt
+tmp
