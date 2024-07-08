@@ -3,8 +3,9 @@ python-dotenv
 groq
 
 sshtunnel
-langchain
-langchain-anthropic
+langchain==0.2.5
+anthropic==0.29.0
+langchain-anthropic==0.1.15
 langchain-openai
 langchain-aws
 langchain-community
