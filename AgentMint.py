@@ -1,98 +1,97 @@
-from typing import Any, Text, Dict, List
-from chat.ChatFactory import ChatFactory
+import traceback
+from typing import Any, Dict, List, Text
+
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-
-from tools.MintHCM.CreateMeeting import MintCreateMeetingTool
-from tools.MintHCM.Search import MintSearchTool
-from tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
-from tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
-from tools.MintHCM.CreateRecord import MintCreateRecordTool
-from tools.MintHCM.GetUsers import MintGetUsersTool
-
-#from tools.MintHCM import MintCreateMeetingTool, MintSearchTool, MintGetModuleNamesTool, MintGetModuleFieldsTool, MintCreateRecordTool, MintGetUsersTool
-from tools.CalenderTool import CalendarTool
-
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.tools import DuckDuckGoSearchResults
-from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain.memory import ConversationBufferMemory
+from langchain_anthropic import ChatAnthropic
+from langchain_community.chat_message_histories import StreamlitChatMessageHistory
+
+# from langchain_community.tools import DuckDuckGoSearchResults
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import ToolException
 
-import traceback
+from agent_graph.graph import compile_workflow, create_graph
+from agent_state.state import GraphState
+from chat.ChatFactory import ChatFactory
+from prompts.PromptController import PromptController
 
-def _handle_tool_error( error: ToolException) -> str:
-        # find if what was returned contains fraze "Module ... does not exist"
-        print("FULL TRACEBACK:")
-        print(traceback.format_exc())
-        if "does not exist" in error.args[0]:
-            return f"Module Error: {error} . Try to use MintGetModuleNamesTool to get list of available modules."
-        else:
-            return (
-                "The following errors occurred during tool execution:"
-                + error.args[0]
-                + "Please try another tool."
-            )
+# from tools.MintHCM import MintCreateMeetingTool, MintSearchTool, MintGetModuleNamesTool, MintGetModuleFieldsTool, MintCreateRecordTool, MintGetUsersTool
+from tools.CalendarTool import CalendarTool
+from tools.MintHCM.CreateMeeting import MintCreateMeetingTool
+from tools.MintHCM.CreateRecord import MintCreateRecordTool
+from tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
+from tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
+from tools.MintHCM.GetUsers import MintGetUsersTool
+from tools.MintHCM.Search import MintSearchTool
+
+
+def _handle_tool_error(error: ToolException) -> str:
+    # find if what was returned contains fraze "Module ... does not exist"
+    print("FULL TRACEBACK:")
+    print(traceback.format_exc())
+    if "does not exist" in error.args[0]:
+        return f"Module Error: {error} . Try to use MintGetModuleNamesTool to get list of available modules."
+    else:
+        return (
+            "The following errors occurred during tool execution:"
+            + error.args[0]
+            + "Please try another tool."
+        )
+
 
 class AgentMint:
 
-    system_prompt = '''
-        Today is {today}.
-        User you are talking to is a user of MintHCM with username {username}.
-        Always answer in polish.
-        You are a helpful assistant. You have access to several tools. Always check with CalendarTool what day it is today. 
-        Your task is to provide accurate and relevant information to the user. 
-        Use tools to get additional information and provide the user with the most relevant answer. 
-        Make sure to verify the information before providing it to the user. 
-        If using MintHCM tools, always make sure to use the correct field names and types by using MintSearchTool.
-        Do not make up information! Do not rely on your knwledge, always use the tools to get the most accurate information.
-        If asked for holidays and events, make sure you knwo wich country the questions regards and search for them with the search tool.
-        Do no assume you know what day is now. If you are asked questions regarding today, yesterday, tommorow etc. then always use the CalendarTool to get the current date.
-        Some questions may require you to use multiple tools. Think carefully what information you need to best answer and use tools accordinglu or ask additional questions to the user.
-        '''
-
     available_tools = {
-        "MintGetModuleNamesTool": MintGetModuleNamesTool(handle_tool_error=_handle_tool_error),
-        "MintGetModuleFieldsTool": MintGetModuleFieldsTool(handle_tool_error=_handle_tool_error),
+        "MintGetModuleNamesTool": MintGetModuleNamesTool(
+            handle_tool_error=_handle_tool_error
+        ),
+        "MintGetModuleFieldsTool": MintGetModuleFieldsTool(
+            handle_tool_error=_handle_tool_error
+        ),
         "MintSearchTool": MintSearchTool(handle_tool_error=_handle_tool_error),
-        "MintCreateRecordTool": MintCreateRecordTool(handle_tool_error=_handle_tool_error),
-        "MintCreateMeetingTool": MintCreateMeetingTool(handle_tool_error=_handle_tool_error),
+        "MintCreateRecordTool": MintCreateRecordTool(
+            handle_tool_error=_handle_tool_error
+        ),
+        "MintCreateMeetingTool": MintCreateMeetingTool(
+            handle_tool_error=_handle_tool_error
+        ),
         "MintGetUsersTool": MintGetUsersTool(handle_tool_error=_handle_tool_error),
-        "Search" : DuckDuckGoSearchResults(name="Search"),
-        "CalendarTool" : CalendarTool(name="CalendarTool")
+        # "Search": DuckDuckGoSearchResults(name="Search"),
+        "CalendarTool": CalendarTool(name="CalendarTool"),
     }
 
     default_tools = [
-        "MintGetModuleNamesTool" ,
-        "MintGetModuleFieldsTool" ,
-        "MintCreateRecordTool" ,
-        "MintCreateMeetingTool" ,
-        "MintSearchTool" ,
-        "MintGetUsersTool" ,
-        "CalendarTool"
+        "MintGetModuleNamesTool",
+        "MintGetModuleFieldsTool",
+        "MintCreateRecordTool",
+        "MintCreateMeetingTool",
+        "MintSearchTool",
+        "MintGetUsersTool",
+        "CalendarTool",
     ]
 
     def __init__(self):
-        self.history = StreamlitChatMessageHistory()
-        self.memory = ConversationBufferMemory(
-            chat_memory=self.history,
-            return_messages=True,
-            memory_key="chat_history",
-            output_key="output",
-            input_key="input"
-        )
-        self.executor = None
+        # self.history = StreamlitChatMessageHistory()
+        # self.memory = ConversationBufferMemory(
+        #     chat_memory=self.history,
+        #     return_messages=True,
+        #     memory_key="chat_history",
+        #     output_key="output",
+        #     input_key="input"
+        # )
+        self.tool_executor = None
+        # self.prompt = ChatPromptTemplate.from_messages(
+        #     [
+        #         ("system", self.system_prompt),
+        #         ("placeholder", "{chat_history}"),
+        #         ("human", "{input}"),
+        #         ("placeholder", "{agent_scratchpad}"),
+        #     ]
+        # )
 
-        self.prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self.system_prompt ),
-                ("placeholder", "{chat_history}"),
-                ("human", "{input}"),
-                ("placeholder", "{agent_scratchpad}"),
-            ]
-        )
-
-    def get_llm(self,  use_provider , use_model ):
+    def get_llm(self, use_provider, use_model):
         return ChatFactory.get_model(use_provider, use_model)
 
     def get_tools(self, tools):
@@ -101,10 +100,12 @@ class AgentMint:
     def get_tool_names(self):
         return list(self.available_tools.keys())
 
-    def set_executor(self, use_provider, use_model, use_tools = []):
+    def set_executor(self, use_provider, use_model, use_tools=[]):
         print(self.get_tools(use_tools))
-        llm = self.get_llm(use_provider,use_model)
-        chat_agent = create_tool_calling_agent(llm=llm, tools=self.get_tools(use_tools), prompt=self.prompt)
+        llm = self.get_llm(use_provider, use_model)
+        chat_agent = create_tool_calling_agent(
+            llm=llm, tools=self.get_tools(use_tools), prompt=self.prompt
+        )
 
         self.executor = AgentExecutor(
             agent=chat_agent,
@@ -113,27 +114,41 @@ class AgentMint:
             return_intermediate_steps=True,
             handle_parsing_errors=True,
             verbose=True,
-            max_iterations=12
+            max_iterations=12,
         )
 
-    def get_executor(self, use_provider, use_model, use_tools = []):
+    def get_executor(self, use_provider, use_model, use_tools=[]):
         self.set_executor(use_provider, use_model, use_tools)
         return self.executor
 
-    def invoke(self, user_input, callback_handler, use_tools, use_provider,use_model, username):
+    def invoke(self):
+        tools = self.get_tools(self.available_tools)
+        graph = create_graph(tools)
+        app = compile_workflow(graph)
 
-        print(f"invoke Provider {use_provider}")
-        print(f"invoke Model {use_model}")
+        ## Visualize the graph
+        # app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
 
-        cfg = RunnableConfig()
-        cfg["callbacks"] = [callback_handler]
+        user_input = input("W czym mogę pomóc?\n> ")
 
-        today = self.available_tools["CalendarTool"]._run("%Y-%m-%d (%A)")
-        input = {
-            "input": user_input,
-            "username": username,
-            "today": today,
-        }
-        return self.get_executor(use_provider, use_model,use_tools).invoke(input, cfg)
+        llm_input = [
+            SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
+            HumanMessage(content=user_input),
+        ]
 
+        thread = {"configurable": {"thread_id": "42"}}
 
+        username = "admin"
+
+        model = ChatAnthropic(
+            model="claude-3-haiku-20240307", temperature=0, max_tokens=1000
+        ).bind_tools(tools)
+
+        state = GraphState(messages=llm_input, user=username, model=model)
+
+        for event in app.stream(
+            state,
+            thread,
+            stream_mode="values",
+        ):
+            event["messages"][-1].pretty_print()
