@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from langgraph.checkpoint import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -8,6 +10,10 @@ from agent_graph.nodes.llm_call import llm_call
 from agent_graph.nodes.output_parser import output_parser
 from agent_graph.nodes.tool_permit import tool_permit
 from agent_state.state import GraphState
+
+
+class ConfigSchema(TypedDict):
+    system_prompt: str
 
 
 def should_continue(state):
@@ -40,7 +46,7 @@ def check_another_prompt(state):
 
 
 def create_graph(tools):
-    graph = StateGraph(GraphState)
+    graph = StateGraph(GraphState, ConfigSchema)
 
     graph.add_node("llm_node", llm_call)
     graph.add_node("tool_node", ToolNode(tools))

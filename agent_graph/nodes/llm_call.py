@@ -1,5 +1,5 @@
-def llm_call(state):
+async def llm_call(state):
     messages = state["messages"]
     model = state["model"]
-    response = model.invoke(messages)
-    return {"messages": [response]}
+    response = await model.ainvoke(messages)
+    return {"messages": response}

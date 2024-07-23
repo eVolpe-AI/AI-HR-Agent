@@ -46,12 +46,12 @@ class ToolController:
     }
 
     default_tools = [
-        "MintGetModuleNamesTool",
-        "MintGetModuleFieldsTool",
-        "MintCreateRecordTool",
-        "MintCreateMeetingTool",
-        "MintSearchTool",
-        "MintGetUsersTool",
+        # "MintGetModuleNamesTool",
+        # "MintGetModuleFieldsTool",
+        # "MintCreateRecordTool",
+        # "MintCreateMeetingTool",
+        # "MintSearchTool",
+        # "MintGetUsersTool",
         "CalendarTool",
     ]
 

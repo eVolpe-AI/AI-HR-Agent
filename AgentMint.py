@@ -93,7 +93,7 @@ class AgentMint:
             model="claude-3-haiku-20240307",
             temperature=0,
             max_tokens=1000,
-            # streaming=True,
+            streaming=True,
         ).bind_tools(tools)
 
         state = GraphState(
@@ -103,18 +103,32 @@ class AgentMint:
             safe_tools=safe_tools,
         )
 
-        for event in app.stream(
-            state,
-            thread,
-            stream_mode="values",
-        ):
-            # event["messages"][-1].pretty_print()
-            print()
+        config = {
+            "configurable": {
+                "system_prompt": PromptController.get_simple_prompt(),
+                "thread_id": "42",
+            }
+        }
 
-        # async def run():
-        #     async for event in app.astream(state, thread, stream_mode="values"):
-        #         # data = event["data"]
-        #         # if data["chunk"].content:
-        #         #     print(data["chunk"].content, end="|")
+        # for event in app.stream(
+        #     state,
+        #     thread,
+        #     stream_mode="values",
+        # ):
+        #     # event["messages"][-1].pretty_print()
+        #     print()
 
-        # asyncio.run(run())
+        async def run():
+            async for event in app.astream_events(state, version="v2", config=config):
+                event_kind = event["event"]
+                if event_kind == "on_chat_model_stream":
+                    content = event["data"]["chunk"].content
+                    if content:
+                        if content[-1]["type"] == "text":
+                            print(content[-1]["text"], end="")
+                # if event_kind == "on_tool_start":
+                #     print("Tool start")
+                # if event_kind == "on_tool_end":
+                #     print("Tool end")
+
+        asyncio.run(run())

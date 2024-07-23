@@ -28,11 +28,11 @@ class CalendarTool(BaseTool):
         print("Calling CalendarTool._run()" + date.today().strftime("%Y-%m-%d (%A)"))
         return date.today().strftime("%Y-%m-%d (%A)")
 
-    async def _arun(
-        self,
-        format: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        """Use the tool asynchronously."""
-        print("Calling CalendarTool._arun()" + date.today())
-        raise NotImplementedError("Calendar does not support async")
+    # async def _arun(
+    #     self,
+    #     format: str,
+    #     run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+    # ) -> str:
+    #     """Use the tool asynchronously."""
+    #     print("Calling CalendarTool._arun()" + date.today())
+    #     raise NotImplementedError("Calendar does not support async")

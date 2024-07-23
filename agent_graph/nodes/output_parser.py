@@ -5,11 +5,11 @@ def output_parser(state):
     print(
         "\n================================= OUTPUT PARSER =================================\n"
     )
-    print(f"{state["messages"][-1].content} \n \n")
+    # print(f"{state["messages"][-1].content} \n \n")
 
     continue_dialogue = inquirer.select(
         message="Czy chcesz kontynuować rozmowę?",
-        choices=["nie", "kontynuuj"], 
+        choices=["nie", "kontynuuj"],
     ).execute()
 
     new_state = state.copy()
