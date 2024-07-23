@@ -1,15 +1,23 @@
-def output_parser(state):
-    print("\n-------------------- Output Parser --------------------\n")
-    print(state["messages"][-1].content)
+from InquirerPy import inquirer
 
-    next = input(
-        "Czy mogę Ci w czymś jeszcze pomóc? (wpisz 'end' aby zakończyć rozmowę): \n> "
+
+def output_parser(state):
+    print(
+        "\n================================= OUTPUT PARSER =================================\n"
     )
+    print(f"{state["messages"][-1].content} \n \n")
+
+    continue_dialogue = inquirer.select(
+        message="Czy chcesz kontynuować rozmowę?",
+        choices=["nie", "kontynuuj"], 
+    ).execute()
 
     new_state = state.copy()
-    if next == "end":
-        new_state["continue_conversation"] = False
+
+    if continue_dialogue == "nie":
+        state["continue_conversation"] = False
     else:
+        next = input("> ")
         new_state["continue_conversation"] = True
         new_state["messages"].append(
             {
