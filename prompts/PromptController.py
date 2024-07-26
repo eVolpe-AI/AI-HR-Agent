@@ -2,7 +2,7 @@ import datetime
 
 
 class PromptController:
-    simple: str = "Odpowiadaj po polsku. Dzisiaj jest {today}"
+    simple: str = "Odpowiadaj po polsku."
     default: str = """
         Today is {today}.
         User you are talking to is a user of MintHCM with username {username}.
@@ -19,11 +19,11 @@ class PromptController:
         """
 
     @staticmethod
-    def get_simple_prompt():
+    def get_simple_prompt() -> str:
         today = datetime.datetime.now().strftime("%d-%m-%Y")
         return PromptController.simple.format(today=today)
 
     @staticmethod
-    def get_default_prompt(username: str):
+    def get_default_prompt(username: str) -> str:
         today = datetime.datetime.now().strftime("%d-%m-%Y")
         return PromptController.default.format(username=username, today=today)

@@ -11,11 +11,6 @@ def tool_permit(state):
     new_state = state.copy()
 
     if tool_to_use not in state["safe_tools"]:
-        answer = inquirer.select(
-            message=f"Agent MintHCM chce wykorzystać: {tool_to_use}. Czy zgadzasz się na użycie tego narzędzia?",
-            choices=["tak", "nie"],
-        ).execute()
-
         if answer == "tak":
             new_state["tool_accept"] = 1
         else:

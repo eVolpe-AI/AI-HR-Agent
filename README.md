@@ -10,10 +10,10 @@
 * Run on envrionment required installs:
 pip install -r requirements.txt -U
 
-* copy .env_example as .env and fill in reuiqred ids
+* copy .env_example as .env and fill in required fields
 
 * Run app:
 
     ```
-    python app.py
+    fastapi dev server.py
     ```

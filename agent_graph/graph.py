@@ -8,6 +8,7 @@ from agent_graph.nodes.gear_manager import gear_manager
 from agent_graph.nodes.intent_retrival import intent_retrival
 from agent_graph.nodes.llm_call import llm_call
 from agent_graph.nodes.output_parser import output_parser
+from agent_graph.nodes.test_stream_node import stream_output
 from agent_graph.nodes.tool_permit import tool_permit
 from agent_state.state import GraphState
 
@@ -16,7 +17,7 @@ class ConfigSchema(TypedDict):
     system_prompt: str
 
 
-def should_continue(state):
+def should_continue(state) -> str:
     messages = state["messages"]
     last_message = messages[-1]
     if not last_message.tool_calls:
@@ -25,7 +26,7 @@ def should_continue(state):
         return "continue"
 
 
-def check_user_decision(state):
+def check_user_decision(state) -> str:
     decision = state["tool_accept"]
     if decision == 1:
         return "consent"
@@ -34,11 +35,11 @@ def check_user_decision(state):
 
 
 # TODO:
-def check_intent(state):
+def check_intent(state) -> str:
     return "continue"
 
 
-def check_another_prompt(state):
+def check_another_prompt(state) -> str:
     if state["continue_conversation"]:
         return "continue"
     else:
@@ -73,11 +74,12 @@ def create_graph(tools):
         {"consent": "tool_node", "decline": "llm_node"},
     )
     graph.add_edge("tool_node", "llm_node")
-    graph.add_conditional_edges(
-        "output_parsing_node",
-        check_another_prompt,
-        {"continue": "intent_retrival_node", "end": END},
-    )
+    graph.add_edge("output_parsing_node", END)
+    # graph.add_conditional_edges(
+    #     "output_parsing_node",
+    #     check_another_prompt,
+    #     {"continue": "intent_retrival_node", "end": END},
+    # )
 
     return graph
 

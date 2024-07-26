@@ -1,44 +1,35 @@
 import asyncio
+import logging
+from enum import Enum
 from typing import Any, Dict, List, Text
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-
-# from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
+from agent_api.messages import (
+    AgentMessage,
+    AgentMessageType,
+    UserMessage,
+    UserMessageType,
+)
 from agent_graph.graph import compile_workflow, create_graph
 from agent_state.state import GraphState
 from chat.ChatFactory import ChatFactory
 from prompts.PromptController import PromptController
 from tools.ToolController import ToolController
+from utils.test import lorem_stream
 
-# from tools.MintHCM import MintCreateMeetingTool, MintSearchTool, MintGetModuleNamesTool, MintGetModuleFieldsTool, MintCreateRecordTool, MintGetUsersTool
+# logging.basicConfig(level=logging.DEBUG)
 
 
 class AgentMint:
     def __init__(self):
-        # self.history = StreamlitChatMessageHistory()
-        # self.memory = ConversationBufferMemory(
-        #     chat_memory=self.history,
-        #     return_messages=True,
-        #     memory_key="chat_history",
-        #     output_key="output",
-        #     input_key="input"
-        # )
-        self.tool_executor = None
-        # self.prompt = ChatPromptTemplate.from_messages(
-        #     [
-        #         ("system", self.system_prompt),
-        #         ("placeholder", "{chat_history}"),
-        #         ("human", "{input}"),
-        #         ("placeholder", "{agent_scratchpad}"),
-        #     ]
-        # )
+        self.history = None
 
     def get_llm(self, use_provider, use_model):
         return ChatFactory.get_model(use_provider, use_model)
@@ -48,44 +39,39 @@ class AgentMint:
         default_tools = ToolController.get_default_tools()
         return [available_tools[tool] for tool in default_tools]
 
-    # def set_executor(self, use_provider, use_model, use_tools=[]):
-    #     print(self.get_tools(use_tools))
-    #     llm = self.get_llm(use_provider, use_model)
-    #     chat_agent = create_tool_calling_agent(
-    #         llm=llm, tools=self.get_tools(use_tools), prompt=self.prompt
-    #     )
+    def visualize_graph(self):
+        graph = create_graph(self.get_tools())
+        app = compile_workflow(graph)
+        app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
 
-    #     self.executor = AgentExecutor(
-    #         agent=chat_agent,
-    #         tools=self.get_tools(use_tools),
-    #         memory=self.memory,
-    #         return_intermediate_steps=True,
-    #         handle_parsing_errors=True,
-    #         verbose=True,
-    #         max_iterations=12,
-    #     )
+    async def mock_invoke(self, message: UserMessage):
+        yield AgentMessage(type=AgentMessageType.agent_start).to_json()
+        yield AgentMessage(type=AgentMessageType.llm_start).to_json()
+        await asyncio.sleep(1)
 
-    # def get_executor(self, use_provider, use_model, use_tools=[]):
-    #     self.set_executor(use_provider, use_model, use_tools)
-    #     return self.executor
+        for chunk in lorem_stream():
+            yield AgentMessage(type=AgentMessageType.llm_text, text=chunk).to_json()
 
-    def invoke(self):
+        yield AgentMessage(type=AgentMessageType.llm_end).to_json()
+
+        yield AgentMessage(
+            type=AgentMessageType.tool_start, tool_name="tool1", tool_input="test input"
+        ).to_json()
+        await asyncio.sleep(4)
+        yield AgentMessage(type=AgentMessageType.tool_end, tool_name="tool1").to_json()
+
+        yield AgentMessage(type=AgentMessageType.agent_end).to_json()
+
+    async def invoke(self, message: UserMessage):
         tools = self.get_tools()
         safe_tools = ToolController.get_safe_tools()
         graph = create_graph(tools)
         app = compile_workflow(graph)
 
-        ## Visualize the graph
-        # app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
-
-        user_input = input("W czym mogę pomóc?\n> ")
-
         llm_input = [
             SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
-            HumanMessage(content=user_input),
+            HumanMessage(content=f"{message.text}"),
         ]
-
-        thread = {"configurable": {"thread_id": "42"}}
 
         username = "admin"
 
@@ -110,25 +96,36 @@ class AgentMint:
             }
         }
 
-        # for event in app.stream(
-        #     state,
-        #     thread,
-        #     stream_mode="values",
-        # ):
-        #     # event["messages"][-1].pretty_print()
-        #     print()
+        yield AgentMessage(type=AgentMessageType.agent_start).to_json()
 
-        async def run():
-            async for event in app.astream_events(state, version="v2", config=config):
-                event_kind = event["event"]
-                if event_kind == "on_chat_model_stream":
-                    content = event["data"]["chunk"].content
-                    if content:
-                        if content[-1]["type"] == "text":
-                            print(content[-1]["text"], end="")
-                # if event_kind == "on_tool_start":
-                #     print("Tool start")
-                # if event_kind == "on_tool_end":
-                #     print("Tool end")
+        async for event in app.astream_events(state, version="v2", config=config):
+            event_kind = event["event"]
+            print(event_kind)
+            output = None
+            if event_kind == "on_chat_model_stream":
+                content = event["data"]["chunk"].content
+                if content:
+                    if content[-1]["type"] == "text":
+                        output = AgentMessage(
+                            type=AgentMessageType.llm_text, text=content[-1]["text"]
+                        )
+            elif event_kind == "on_chat_model_start":
+                output = AgentMessage(type=AgentMessageType.llm_start)
+            elif event_kind == "on_chat_model_end":
+                output = AgentMessage(type=AgentMessageType.llm_end)
+            elif event_kind == "on_tool_start":
+                output = AgentMessage(
+                    type=AgentMessageType.tool_start,
+                    tool_name=event["name"],
+                    tool_input=event["data"]["input"],
+                )
+            elif event_kind == "on_tool_end":
+                output = AgentMessage(
+                    type=AgentMessageType.tool_end,
+                    tool_name=event["name"],
+                )
 
-        asyncio.run(run())
+            if output:
+                yield output.to_json()
+
+        yield AgentMessage(type=AgentMessageType.agent_end).to_json()
