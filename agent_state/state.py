@@ -9,20 +9,17 @@ class GraphState(TypedDict):
     tool_accept: bool
     user: str
     model: Any
-    continue_conversation: bool
 
     def __init__(
         self,
         messages,
+        safe_tools: list,
         user: str,
         model: Any,
-        safe_tools: list,
-        tool_accept: bool = 0,
-        continue_conversation: bool = 1,
+        tool_accept: bool,
     ):
         self.messages = messages
+        self.safe_tools = safe_tools
         self.tool_accept = tool_accept
         self.user = user
         self.model = model
-        self.continue_conversation = continue_conversation
-        self.safe_tools = safe_tools

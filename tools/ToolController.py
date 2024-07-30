@@ -56,7 +56,7 @@ class ToolController:
     ]
 
     safe_tools = [
-        "CalendarTool",
+        # "CalendarTool",
     ]
 
     @staticmethod

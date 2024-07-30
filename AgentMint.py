@@ -7,7 +7,12 @@ from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import (
+    HumanMessage,
+    RemoveMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
@@ -29,10 +34,37 @@ from utils.test import lorem_stream
 
 class AgentMint:
     def __init__(self):
+        self.username = "admin"
         self.history = None
 
-    def get_llm(self, use_provider, use_model):
-        return ChatFactory.get_model(use_provider, use_model)
+        tools = self.get_tools()
+
+        self.safe_tools = ToolController.get_safe_tools()
+        self.graph = create_graph(tools)
+        self.app = compile_workflow(self.graph)
+        self.model = ChatAnthropic(
+            model="claude-3-haiku-20240307",
+            temperature=0,
+            max_tokens=1000,
+            streaming=True,
+        ).bind_tools(tools)
+
+        self.state = GraphState(
+            messages=[],
+            user=self.username,
+            model=self.model,
+            safe_tools=self.safe_tools,
+            tool_accept=False,
+        )
+
+        self.config = {
+            "configurable": {
+                "thread_id": "42",
+            }
+        }
+
+    def update_history(self, new_history):
+        self.history = new_history
 
     def get_tools(self):
         available_tools = ToolController.get_available_tools()
@@ -40,9 +72,7 @@ class AgentMint:
         return [available_tools[tool] for tool in default_tools]
 
     def visualize_graph(self):
-        graph = create_graph(self.get_tools())
-        app = compile_workflow(graph)
-        app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
+        self.app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
 
     async def mock_invoke(self, message: UserMessage):
         yield AgentMessage(type=AgentMessageType.agent_start).to_json()
@@ -63,45 +93,46 @@ class AgentMint:
         yield AgentMessage(type=AgentMessageType.agent_end).to_json()
 
     async def invoke(self, message: UserMessage):
-        tools = self.get_tools()
-        safe_tools = ToolController.get_safe_tools()
-        graph = create_graph(tools)
-        app = compile_workflow(graph)
+        if self.history:
+            self.state["messages"] = self.history
+        else:
+            self.state["messages"] = [
+                SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
+            ]
 
-        llm_input = [
-            SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
-            HumanMessage(content=f"{message.text}"),
-        ]
+        if message.type == "tool_confirmation":
+            print("\nTool confirmed\n")
+            self.state["tool_accept"] = True
+        elif message.type == "tool_rejection":
+            tool_call_message = self.state["messages"][-1].tool_calls[0]
+            print(f"\nTool rejected: {tool_call_message}\n")
+            self.state["tool_accept"] = False
+            self.state["messages"].append(
+                ToolMessage(
+                    tool_call_id=tool_call_message["id"],
+                    content=f"Wywołanie narzędzia odrzucone przez użytkownika, powód: {message.text if message.text else 'nieznany'}.",
+                )
+            )
+            # self.state["messages"].append(RemoveMessage(id=tool_call_message.id))
+            # self.state["messages"].append(
+            #     HumanMessage(
+            #         content=f"Próbowałeś skorzystać z narzędzia {tool_call_message.content[-1]["name"]}. Ale nie wyrażam na to zgody, bo {message.text if message.text else ''}."
+            #     )
+            # )
+        else:
+            self.state["messages"].append(HumanMessage(content=f"{message.text}"))
+            self.state["tool_accept"] = False
 
-        username = "admin"
-
-        model = ChatAnthropic(
-            model="claude-3-haiku-20240307",
-            temperature=0,
-            max_tokens=1000,
-            streaming=True,
-        ).bind_tools(tools)
-
-        state = GraphState(
-            messages=llm_input,
-            user=username,
-            model=model,
-            safe_tools=safe_tools,
-        )
-
-        config = {
-            "configurable": {
-                "system_prompt": PromptController.get_simple_prompt(),
-                "thread_id": "42",
-            }
-        }
+        print(f"Agent input: {self.state['messages']}")
 
         yield AgentMessage(type=AgentMessageType.agent_start).to_json()
 
-        async for event in app.astream_events(state, version="v2", config=config):
+        async for event in self.app.astream_events(
+            input=self.state, version="v2", config=self.config
+        ):
             event_kind = event["event"]
-            print(event_kind)
             output = None
+
             if event_kind == "on_chat_model_stream":
                 content = event["data"]["chunk"].content
                 if content:
@@ -124,8 +155,19 @@ class AgentMint:
                     type=AgentMessageType.tool_end,
                     tool_name=event["name"],
                 )
+            elif event_kind == "on_custom_event":
+                event_name = event["name"]
+                event_data = event["data"]
+                if event_name == "tool_accept":
+                    yield AgentMessage(
+                        type=AgentMessageType.tool_accept,
+                        tool_input=event_data["params"],
+                        tool_name=event_data["tool"],
+                    ).to_json()
 
             if output:
                 yield output.to_json()
 
         yield AgentMessage(type=AgentMessageType.agent_end).to_json()
+
+        self.update_history(self.app.get_state(self.config).values["messages"])
