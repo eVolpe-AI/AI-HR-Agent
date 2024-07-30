@@ -2,9 +2,9 @@ from enum import Enum
 
 
 class UserMessageType(Enum):
-    chat_history = "chat_history"
     input = "input"
     tool_confirmation = "tool_confirmation"
+    tool_decline = "tool_rejection"
 
     def __str__(self):
         return self.value
@@ -16,6 +16,7 @@ class AgentMessageType(Enum):
     llm_start = "llm_start"
     llm_end = "llm_end"
     llm_text = "llm_text"
+    tool_accept = "tool_accept"
     tool_start = "tool_start"
     tool_end = "tool_end"
 

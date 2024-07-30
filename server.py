@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.websockets import WebSocketState
 
 from agent_api.messages import UserMessage, UserMessageType
@@ -17,47 +17,6 @@ os.environ["LANGCHAIN_PROJECT"] = "mintAgent"
 
 
 app = FastAPI()
-
-html = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Chat</title>
-    </head>
-    <body>
-        <h1>WebSocket mintHCM chat</h1>
-        <h2>Your ID: <span id="ws-id"></span></h2>
-        <form action="" onsubmit="sendMessage(event)">
-            <input type="text" id="messageText" autocomplete="off"/>
-            <button>Send</button>
-        </form>
-        <ul id='messages'>
-        </ul>
-        <script>
-            var client_id = Date.now()
-            document.querySelector("#ws-id").textContent = client_id;
-            var ws = new WebSocket(`ws://localhost:8000/ws/test/${client_id}`);
-            ws.onmessage = function(event) {
-                var messages = document.getElementById('messages')
-                var message = document.createElement('li')
-                var content = document.createTextNode(event.data)
-                message.appendChild(content)
-                messages.appendChild(message)
-            };
-            function sendMessage(event) {
-                var input = document.getElementById("messageText")
-                var message = {
-                    type: "input",
-                    text: input.value
-                }
-                ws.send(JSON.stringify(message))
-                input.value = ''
-                event.preventDefault()
-            }
-        </script>
-    </body>
-</html>
-"""
 
 
 async def call_agent(agent: AgentMint, message: str):
@@ -91,7 +50,7 @@ manager = ConnectionManager()
 
 @app.get("/")
 async def get():
-    return HTMLResponse(html)
+    return FileResponse("./utils/chat.html")
 
 
 @app.websocket("/ws/{client_id}")
@@ -99,6 +58,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
     await manager.connect(websocket)
     try:
         agent = AgentMint()
+        agent.visualize_graph()
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)

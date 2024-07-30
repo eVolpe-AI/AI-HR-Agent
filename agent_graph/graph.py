@@ -8,13 +8,8 @@ from agent_graph.nodes.gear_manager import gear_manager
 from agent_graph.nodes.intent_retrival import intent_retrival
 from agent_graph.nodes.llm_call import llm_call
 from agent_graph.nodes.output_parser import output_parser
-from agent_graph.nodes.test_stream_node import stream_output
 from agent_graph.nodes.tool_permit import tool_permit
 from agent_state.state import GraphState
-
-
-class ConfigSchema(TypedDict):
-    system_prompt: str
 
 
 def should_continue(state) -> str:
@@ -28,7 +23,7 @@ def should_continue(state) -> str:
 
 def check_user_decision(state) -> str:
     decision = state["tool_accept"]
-    if decision == 1:
+    if decision:
         return "consent"
     else:
         return "decline"
@@ -39,15 +34,16 @@ def check_intent(state) -> str:
     return "continue"
 
 
-def check_another_prompt(state) -> str:
-    if state["continue_conversation"]:
-        return "continue"
+def check_message_type(state) -> str:
+    print(state["tool_accept"])
+    if state["tool_accept"]:
+        return "confirmation"
     else:
-        return "end"
+        return "default"
 
 
 def create_graph(tools):
-    graph = StateGraph(GraphState, ConfigSchema)
+    graph = StateGraph(GraphState)
 
     graph.add_node("llm_node", llm_call)
     graph.add_node("tool_node", ToolNode(tools))
@@ -56,7 +52,11 @@ def create_graph(tools):
     graph.add_node("gear_manager_node", gear_manager)
     graph.add_node("output_parsing_node", output_parser)
 
-    graph.add_edge(START, "intent_retrival_node")
+    graph.add_conditional_edges(
+        START,
+        check_message_type,
+        {"default": "intent_retrival_node", "confirmation": "tool_node"},
+    )
     graph.add_conditional_edges(
         "intent_retrival_node",
         check_intent,
@@ -71,7 +71,7 @@ def create_graph(tools):
     graph.add_conditional_edges(
         "tool_controller_node",
         check_user_decision,
-        {"consent": "tool_node", "decline": "llm_node"},
+        {"consent": "tool_node", "decline": "output_parsing_node"},
     )
     graph.add_edge("tool_node", "llm_node")
     graph.add_edge("output_parsing_node", END)
