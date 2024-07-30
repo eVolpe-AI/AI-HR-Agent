@@ -126,7 +126,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
             # copy rows from data to return_data, olny the attributes
             return_data = []
             for row in data:
-                return_data.append(row['attributes'])
+                return_data.append({"id": row['id'], **row['attributes']})
             print(f'Return data: {return_data}')
             return {"data": return_data}
         except Exception as e:

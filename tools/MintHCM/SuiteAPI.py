@@ -46,6 +46,7 @@ class SuiteCRM:
         self.Targets = Module(self, 'Targets')
         self.Tasks = Module(self, 'Tasks')
         self.Templates = Module(self, 'Templates')
+        self.Candidates = Module(self, 'Candidates')
 
     def _refresh_token(self) -> None:
         """

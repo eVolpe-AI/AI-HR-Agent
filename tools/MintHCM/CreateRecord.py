@@ -24,7 +24,7 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
             url = f'{self.api_url}/module'
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, 'post', parameters=data)
-            return {"data": response}
+            return "W module "+ module_name + " utworzono nowy rekord"
         except Exception as e:
             print(traceback.format_exc())
             raise ToolException(f"Error: {e}")

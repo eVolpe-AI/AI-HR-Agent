@@ -5,10 +5,15 @@ from langchain_core.tools import ToolException
 from tools.CalendarTool import CalendarTool
 from tools.MintHCM.CreateMeeting import MintCreateMeetingTool
 from tools.MintHCM.CreateRecord import MintCreateRecordTool
+from tools.MintHCM.CreateRelationships import MintCreateRelTool
+from tools.MintHCM.DeleteRecord import MintDeleteRecordTool
+from tools.MintHCM.DeleteRelationships import MintDeleteRelTool
 from tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
 from tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
+from tools.MintHCM.GetRelationships import MintGetRelTool
 from tools.MintHCM.GetUsers import MintGetUsersTool
 from tools.MintHCM.Search import MintSearchTool
+from tools.MintHCM.UpdateFields import MintUpdateFieldsTool
 
 
 def _handle_tool_error(error: ToolException) -> str:
@@ -41,17 +46,28 @@ class ToolController:
             handle_tool_error=_handle_tool_error
         ),
         "MintGetUsersTool": MintGetUsersTool(handle_tool_error=_handle_tool_error),
-        # "Search": DuckDuckGoSearchResults(name="Search"),
+        "UpdateFieldsTool": MintUpdateFieldsTool(handle_tool_error=_handle_tool_error),
+        "MintCreateRelTool": MintCreateRelTool(handle_tool_error=_handle_tool_error),
+        "MintDeleteRecordTool": MintDeleteRecordTool(
+            handle_tool_error=_handle_tool_error
+        ),
+        "MintDeleteRelTool": MintDeleteRelTool(handle_tool_error=_handle_tool_error),
+        "MintGetRelTool": MintGetRelTool(handle_tool_error=_handle_tool_error),
         "CalendarTool": CalendarTool(name="CalendarTool"),
     }
 
     default_tools = [
-        # "MintGetModuleNamesTool",
-        # "MintGetModuleFieldsTool",
-        # "MintCreateRecordTool",
-        # "MintCreateMeetingTool",
-        # "MintSearchTool",
-        # "MintGetUsersTool",
+        "MintGetModuleNamesTool",
+        "MintGetModuleFieldsTool",
+        "MintSearchTool",
+        "MintCreateRecordTool",
+        "MintCreateMeetingTool",
+        "MintGetUsersTool",
+        "UpdateFieldsTool",
+        "MintCreateRelTool",
+        "MintDeleteRecordTool",
+        "MintDeleteRelTool",
+        "MintGetRelTool",
         "CalendarTool",
     ]
 

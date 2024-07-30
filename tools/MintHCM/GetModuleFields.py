@@ -1,19 +1,14 @@
-from typing import Any, Dict, List, Optional, Type
-
-from langchain.callbacks.manager import CallbackManagerForToolRun
-from langchain_core.tools import BaseTool, ToolException
+from typing import Type, Optional, Any, Dict, List
 from pydantic import BaseModel, Field
-
+from langchain_core.tools import BaseTool
+from langchain.callbacks.manager import CallbackManagerForToolRun
+from langchain_core.tools import BaseTool
+from langchain_core.tools import ToolException
 from tools.MintHCM.BaseTool import MintBaseTool
-from tools.MintHCM.SuiteAPI import Module, SuiteCRM
-
+from tools.MintHCM.SuiteAPI import SuiteCRM, Module
 
 class MintGetModuleFieldsInput(BaseModel):
-    module_name: str = Field(
-        ...,
-        description="Name of the module in Mint in which the information is to be read",
-    )
-
+    module_name: str = Field(..., description="Name of the module in Mint in which the information is to be read")
 
 class MintGetModuleFieldsTool(BaseTool, MintBaseTool):
     name: str = "MintGetModuleFieldsTool"
@@ -23,9 +18,7 @@ class MintGetModuleFieldsTool(BaseTool, MintBaseTool):
     """
     args_schema: Type[BaseModel] = MintGetModuleFieldsInput
 
-    def _run(
-        self, module_name: str, run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> Dict[str, Any]:
+    def _run(self, module_name: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> Dict[str, Any]:
         try:
             suitecrm = self.get_connection()
             module = Module(suitecrm, module_name)

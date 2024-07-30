@@ -5,6 +5,7 @@ from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from langchain_core.tools import ToolException
 from tools.MintHCM.BaseTool import MintBaseTool
+from tools.MintHCM.CreateRelationships import MintCreateRelTool
 import traceback
 
 class MintCreateMeetingInput(BaseModel):
@@ -17,6 +18,10 @@ class MintCreateMeetingInput(BaseModel):
     List of ids of attendees to the meeting. Example: ['1', 'f39a04c4-e537-4030-9d5a-6638bb2bb87d']
     If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM.
     """)
+    candidates: List[str] = Field(..., description="""
+    List of ids of candidates to the meeting. Example: ['26c2081a-1f55-66f7-7b49-6662ef7ab388','68339282-a9f3-ed1d-7ffe-662f6fadd1a9']
+    If you have just first_name and a last_name of the candidate, use MintSearchTool to search for candidate id in MintHCM.
+    """)
 
 class MintCreateMeetingTool(BaseTool, MintBaseTool):
     name: str = "MintCreateMeetingTool"
@@ -28,19 +33,27 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     """
     args_schema: Type[BaseModel] = MintCreateMeetingInput
 
-    def _run(self, module_name: str, attributes: Dict[str, Any], attendees: List[str],
-        run_manager: Optional[CallbackManagerForToolRun] = None) -> Dict[str, Any]:
+    def _run(self, module_name: str, attributes: Dict[str, Any], attendees: List[str], candidates: Optional[List[str]],
+            run_manager: Optional[CallbackManagerForToolRun] = None) -> Dict[str, Any]:
         try:
             suitecrm = self.get_connection()
             url = f'{self.api_url}/module'
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, 'post', parameters=data)
+
+            def add_relationships(relationship_type, ids):
+                for record_id in ids:
+                    relationship_url = f'{self.api_url}/module/{module_name}/{response["data"]["id"]}/relationships/{relationship_type}'
+                    relationship_data = {"type": relationship_type.capitalize(), "id": record_id}
+                    suitecrm.request(relationship_url, 'post', parameters=relationship_data)
+
             if attendees:
-                for attendee in attendees:
-                    url = f'{self.api_url}/module/{module_name}/{response["data"]["id"]}/relationships/users'
-                    data = {"type": "Users", "id": attendee}
-                    response2 = suitecrm.request(url, 'post', parameters=data)
-            return response
+                add_relationships('users', attendees)
+            if candidates:
+                add_relationships('candidates', candidates)
+
+            return "W module 'Meetings' utworzono nowe spotkanie."
+
         except Exception as e:
             print(traceback.format_exc())
             raise ToolException(f"Error: {e}")
