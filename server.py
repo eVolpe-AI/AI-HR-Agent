@@ -1,12 +1,11 @@
-import asyncio
 import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 
-from agent_api.messages import UserMessage, UserMessageType
+from agent_api.messages import UserMessage
 from AgentMint import AgentMint
 
 load_dotenv()

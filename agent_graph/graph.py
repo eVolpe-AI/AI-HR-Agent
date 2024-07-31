@@ -1,5 +1,3 @@
-from typing import TypedDict
-
 from langgraph.checkpoint import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -29,7 +27,6 @@ def check_user_decision(state) -> str:
         return "decline"
 
 
-# TODO:
 def check_intent(state) -> str:
     return "continue"
 
@@ -75,11 +72,6 @@ def create_graph(tools):
     )
     graph.add_edge("tool_node", "llm_node")
     graph.add_edge("output_parsing_node", END)
-    # graph.add_conditional_edges(
-    #     "output_parsing_node",
-    #     check_another_prompt,
-    #     {"continue": "intent_retrival_node", "end": END},
-    # )
 
     return graph
 

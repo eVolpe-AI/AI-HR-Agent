@@ -2,7 +2,7 @@ import random
 import time
 
 
-def lorem_stream(
+def stream_lorem_ipsum(
     min_total_size=100,
     max_total_size=500,
     min_chunk_size=1,

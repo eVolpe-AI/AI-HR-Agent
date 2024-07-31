@@ -1,20 +1,13 @@
 import asyncio
-import logging
-from enum import Enum
 from typing import Any, Dict, List, Text
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain.memory import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
-from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain_core.messages import (
     HumanMessage,
     RemoveMessage,
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableConfig
 
 from agent_api.messages import (
     AgentMessage,
@@ -27,7 +20,7 @@ from agent_state.state import GraphState
 from chat.ChatFactory import ChatFactory
 from prompts.PromptController import PromptController
 from tools.ToolController import ToolController
-from utils.test import lorem_stream
+from utils.mock_streaming import stream_lorem_ipsum
 
 # logging.basicConfig(level=logging.DEBUG)
 
@@ -66,7 +59,7 @@ class AgentMint:
     def update_history(self, new_history):
         self.history = new_history
 
-    def get_tools(self):
+    def get_tools(self) -> List[Dict[str, Any]]:
         available_tools = ToolController.get_available_tools()
         default_tools = ToolController.get_default_tools()
         return [available_tools[tool] for tool in default_tools]
@@ -79,7 +72,7 @@ class AgentMint:
         yield AgentMessage(type=AgentMessageType.llm_start).to_json()
         await asyncio.sleep(1)
 
-        for chunk in lorem_stream():
+        for chunk in stream_lorem_ipsum():
             yield AgentMessage(type=AgentMessageType.llm_text, text=chunk).to_json()
 
         yield AgentMessage(type=AgentMessageType.llm_end).to_json()
@@ -105,7 +98,6 @@ class AgentMint:
             self.state["tool_accept"] = True
         elif message.type == "tool_rejection":
             tool_call_message = self.state["messages"][-1].tool_calls[0]
-            print(f"\nTool rejected: {tool_call_message}\n")
             self.state["tool_accept"] = False
             self.state["messages"].append(
                 ToolMessage(
@@ -113,17 +105,9 @@ class AgentMint:
                     content=f"Wywołanie narzędzia odrzucone przez użytkownika, powód: {message.text if message.text else 'nieznany'}.",
                 )
             )
-            # self.state["messages"].append(RemoveMessage(id=tool_call_message.id))
-            # self.state["messages"].append(
-            #     HumanMessage(
-            #         content=f"Próbowałeś skorzystać z narzędzia {tool_call_message.content[-1]["name"]}. Ale nie wyrażam na to zgody, bo {message.text if message.text else ''}."
-            #     )
-            # )
         else:
             self.state["messages"].append(HumanMessage(content=f"{message.text}"))
             self.state["tool_accept"] = False
-
-        print(f"Agent input: {self.state['messages']}")
 
         yield AgentMessage(type=AgentMessageType.agent_start).to_json()
 
@@ -164,7 +148,6 @@ class AgentMint:
                         tool_input=event_data["params"],
                         tool_name=event_data["tool"],
                     ).to_json()
-
             if output:
                 yield output.to_json()
 
