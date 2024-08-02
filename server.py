@@ -52,12 +52,11 @@ async def get():
     return FileResponse("./utils/chat.html")
 
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
+@app.websocket("/ws/{chat_id}/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, chat_id: int, user_id: str):
     await manager.connect(websocket)
     try:
-        agent = AgentMint()
-        agent.visualize_graph()
+        agent = AgentMint(user_id=user_id, chat_id=chat_id)
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
@@ -68,11 +67,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         await manager.disconnect(websocket)
 
 
-@app.websocket("/ws/test/{client_id}")
-async def websocket_test_endpoint(websocket: WebSocket, client_id: int):
+@app.websocket("/ws/test/{chat_id}/")
+async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
     await manager.connect(websocket)
     try:
-        agent = AgentMint()
+        agent = AgentMint(username="admin", chat_id=chat_id)
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)

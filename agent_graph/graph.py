@@ -1,6 +1,9 @@
-from langgraph.checkpoint import MemorySaver
+import os
+
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.graph import CompiledGraph
 from langgraph.prebuilt import ToolNode
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_graph.nodes.gear_manager import gear_manager
 from agent_graph.nodes.intent_retrival import intent_retrival
@@ -8,6 +11,7 @@ from agent_graph.nodes.llm_call import llm_call
 from agent_graph.nodes.output_parser import output_parser
 from agent_graph.nodes.tool_permit import tool_permit
 from agent_state.state import GraphState
+from database.db_utils import MongoDBCheckpointSaver
 
 
 def should_continue(state) -> str:
@@ -32,14 +36,13 @@ def check_intent(state) -> str:
 
 
 def check_message_type(state) -> str:
-    print(state["tool_accept"])
     if state["tool_accept"]:
         return "confirmation"
     else:
         return "default"
 
 
-def create_graph(tools):
+def create_graph(tools: list) -> StateGraph:
     graph = StateGraph(GraphState)
 
     graph.add_node("llm_node", llm_call)
@@ -76,8 +79,13 @@ def create_graph(tools):
     return graph
 
 
-def compile_workflow(graph):
-    memory = MemorySaver()
-    workflow = graph.compile(checkpointer=memory)
+def compile_workflow(graph: StateGraph, username: str) -> CompiledGraph:
+    MONGO_URI = os.getenv("MONGO_URI")
+    DB_NAME = os.getenv("DB_NAME")
+
+    checkpointer = MongoDBCheckpointSaver(
+        AsyncIOMotorClient(MONGO_URI), DB_NAME, username
+    )
+    workflow = graph.compile(checkpointer=checkpointer)
 
     return workflow

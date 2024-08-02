@@ -120,6 +120,61 @@
         .chat-input button:hover {
             background-color: #0056b3;
         }
+
+        .button-box {
+            display: flex;
+            justify-content: center;
+        }   
+
+        #connect {
+            background-color: #28a745;
+        }
+
+        #connect:hover {
+            background-color: #218838;
+        }
+
+        #close {
+            background-color: #dc3545;
+        }
+
+        #close:hover {
+            background-color: #c82333;
+        }
+
+        #reconnect {
+            background-color: #ffc107;
+        }
+
+        #reconnect:hover {
+            background-color: #e0a800;
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+        }
+
+        .input-box div {
+            display: flex;
+            align-items: center;
+            margin: 5px;
+        }
+
+        .input-box label {
+            margin-right: 5px;
+            color: bisque;
+            font-weight: bold;
+        }
+
+        .input-box input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -127,6 +182,20 @@
         <div class="chat-header">
             <h2>mintHCM Agent</h2>
             <h4 id="ws-id">Room id: </h4>
+            <div class="input-box">
+                <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="admin">
+            </div>
+            <div>
+                <label for="connection_id">Chat ID:</label>
+                <input type="text" id="connection_id" value="1"></div>
+            </div>
+            <div class="button-box">
+                <button id="connect">Connect</button>
+                <button id="close">Close Connection</button>
+                <button id="reconnect">Reconnect</button>
+            </div>
         </div>
         <div class="chat-messages" id="chatMessages">
             
@@ -135,38 +204,57 @@
             <input type="text" id="userInput" placeholder="Type a message...">
             <button type="submit">Send</button>
         </form>
-        <button class="confirm-button" id="confirm">Confirm Tool</button>
-        <button class="decline-button" id="decline">Decline Tool</button>
+        <div class="button-box">
+            <button class="confirm-button" id="confirm">Confirm Tool</button>
+            <button class="decline-button" id="decline">Decline Tool</button>
+        </div>
     </div>
     <script>
-        var client_id = Date.now()
-        document.querySelector("#ws-id").textContent += client_id;
-        var ws = new WebSocket(`ws://localhost:8000/ws/test/${client_id}`);
-        ws.onmessage = function(event) {
-            var chatMessages = document.getElementById('chatMessages');
-            var messageElement = document.createElement('div');
-            var message = JSON.parse(event.data);
-            messageElement.classList.add('chat-message');
+        var ws;
+        function connectWebSocket() {
+            var chat_id = document.querySelector("#connection_id").value;
+            var username = document.querySelector("#username").value;
+            ws = new WebSocket(`ws://localhost:8000/ws/${chat_id}/${username}`);
 
-            if (message.type === "llm_text") {
-                messageElement.classList.add('ai-message');
-                messageElement.textContent = event.data;
-            } else if (message.type === "tool_accept") {
-                messageElement.classList.add('ai-tool');
-                messageElement.innerHTML= "Tool confirmation needed <br><br>";
-                messageElement.innerHTML += message.tool_name;
-                messageElement.innerHTML += "<br>input: " + message.tool_input;
-            } else if (message.type) {
-                messageElement.classList.add('ai-debug');
-                messageElement.textContent = event.data;
-            } else {
-                messageElement.classList.add('user-message');
-                messageElement.textContent = event.data;
-            }
+            ws.onmessage = function(event) {
+                var chatMessages = document.getElementById('chatMessages');
+                var messageElement = document.createElement('div');
+                var message = JSON.parse(event.data);
+                messageElement.classList.add('chat-message');
 
-            chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        };
+                if (message.type === "llm_text") {
+                    messageElement.classList.add('ai-message');
+                    messageElement.textContent = event.data;
+                } else if (message.type === "tool_accept") {
+                    messageElement.classList.add('ai-tool');
+                    messageElement.innerHTML= "Tool confirmation needed <br><br>";
+                    messageElement.innerHTML += message.tool_name;
+                    messageElement.innerHTML += "<br>input: " + message.tool_input;
+                } else if (message.type) {
+                    messageElement.classList.add('ai-debug');
+                    messageElement.textContent = event.data;
+                } else {
+                    messageElement.classList.add('user-message');
+                    messageElement.textContent = event.data;
+                }
+
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            ws.onopen = function(event) {
+                console.log("Connection established");
+            };
+
+            ws.onclose = function(event) {
+                console.log("Connection closed");
+            };
+
+            ws.onerror = function(event) {
+                console.log("Error: ", event);
+            };
+        }
+        
         function sendMessage(event) {
             var input = document.getElementById("userInput")
             var message = {
@@ -177,12 +265,28 @@
             input.value = ''
             event.preventDefault()
         }
+        
+        function closeWebSocket() {
+            ws.close()
+        }
+
+        function reconnectWebSocket() {
+            closeWebSocket()
+            connectWebSocket()
+        }
+
+        document.getElementById('connect').addEventListener('click', connectWebSocket);
+        document.getElementById('close').addEventListener('click', closeWebSocket);
+        document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
+
+        
         function sendConfirmation() {
             var message = {
                 type: "tool_confirmation",
             }
             ws.send(JSON.stringify(message))
         }
+
         function sendDecline() {
             var input = document.getElementById("userInput")
             console.log("Decline")

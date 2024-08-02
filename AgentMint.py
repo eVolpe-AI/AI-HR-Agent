@@ -1,13 +1,12 @@
 import asyncio
+import os
+from datetime import datetime
 from typing import Any, Dict, List, Text
 
+from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import (
-    HumanMessage,
-    RemoveMessage,
-    SystemMessage,
-    ToolMessage,
-)
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_api.messages import (
     AgentMessage,
@@ -18,23 +17,26 @@ from agent_api.messages import (
 from agent_graph.graph import compile_workflow, create_graph
 from agent_state.state import GraphState
 from chat.ChatFactory import ChatFactory
+from database.db_utils import MongoDBUsageTracker
 from prompts.PromptController import PromptController
 from tools.ToolController import ToolController
 from utils.mock_streaming import stream_lorem_ipsum
 
-# logging.basicConfig(level=logging.DEBUG)
+load_dotenv()
 
 
 class AgentMint:
-    def __init__(self):
-        self.username = "admin"
-        self.history = None
-
+    def __init__(self, user_id: str, chat_id: str):
         tools = self.get_tools()
-
+        self.user_id = user_id
         self.safe_tools = ToolController.get_safe_tools()
         self.graph = create_graph(tools)
-        self.app = compile_workflow(self.graph)
+        self.app = compile_workflow(self.graph, user_id)
+
+        self.usage_tracker = MongoDBUsageTracker(
+            AsyncIOMotorClient(os.getenv("MONGO_URI")), os.getenv("DB_NAME"), user_id
+        )
+
         self.model = ChatAnthropic(
             model="claude-3-haiku-20240307",
             temperature=0,
@@ -44,7 +46,7 @@ class AgentMint:
 
         self.state = GraphState(
             messages=[],
-            user=self.username,
+            user=user_id,
             model=self.model,
             safe_tools=self.safe_tools,
             tool_accept=False,
@@ -52,12 +54,10 @@ class AgentMint:
 
         self.config = {
             "configurable": {
-                "thread_id": "42",
+                "thread_id": chat_id,
+                "user_id": user_id,
             }
         }
-
-    def update_history(self, new_history):
-        self.history = new_history
 
     def get_tools(self) -> List[Dict[str, Any]]:
         available_tools = ToolController.get_available_tools()
@@ -86,18 +86,16 @@ class AgentMint:
         yield AgentMessage(type=AgentMessageType.agent_end).to_json()
 
     async def invoke(self, message: UserMessage):
-        if self.history:
-            self.state["messages"] = self.history
-        else:
+        prev_state = await self.app.aget_state(self.config)
+        if not prev_state.values["messages"]:
             self.state["messages"] = [
                 SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
             ]
 
-        if message.type == "tool_confirmation":
-            print("\nTool confirmed\n")
+        if message.type == UserMessageType.tool_confirmation.value:
             self.state["tool_accept"] = True
-        elif message.type == "tool_rejection":
-            tool_call_message = self.state["messages"][-1].tool_calls[0]
+        elif message.type == UserMessageType.tool_decline.value:
+            tool_call_message = prev_state.values["messages"][-1].tool_calls[0]
             self.state["tool_accept"] = False
             self.state["messages"].append(
                 ToolMessage(
@@ -105,9 +103,11 @@ class AgentMint:
                     content=f"Wywołanie narzędzia odrzucone przez użytkownika, powód: {message.text if message.text else 'nieznany'}.",
                 )
             )
-        else:
+        elif message.type == UserMessageType.input.value:
             self.state["messages"].append(HumanMessage(content=f"{message.text}"))
             self.state["tool_accept"] = False
+        else:
+            raise ValueError(f"Unknown message type: {message.type}")
 
         yield AgentMessage(type=AgentMessageType.agent_start).to_json()
 
@@ -127,6 +127,11 @@ class AgentMint:
             elif event_kind == "on_chat_model_start":
                 output = AgentMessage(type=AgentMessageType.llm_start)
             elif event_kind == "on_chat_model_end":
+                usage_data = {
+                    "tokens": event["data"]["output"].usage_metadata,
+                    "time": datetime.now(),
+                }
+                await self.usage_tracker.push_token_usage(usage_data)
                 output = AgentMessage(type=AgentMessageType.llm_end)
             elif event_kind == "on_tool_start":
                 output = AgentMessage(
@@ -152,5 +157,3 @@ class AgentMint:
                 yield output.to_json()
 
         yield AgentMessage(type=AgentMessageType.agent_end).to_json()
-
-        self.update_history(self.app.get_state(self.config).values["messages"])

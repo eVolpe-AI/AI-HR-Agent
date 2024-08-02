@@ -15,8 +15,5 @@ async def tool_permit(state):
         new_state["tool_accept"] = 0
     else:
         new_state["tool_accept"] = 1
-        # print(
-        #     f"""Narzędzie {tool_name} jest bezpieczne i nie wymaga zgody użytkownika."""
-        # )
 
     return new_state
