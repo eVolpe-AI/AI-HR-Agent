@@ -61,7 +61,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
-            await manager.send_message(user_input.text, websocket)
+            type = user_input.to_json()["type"]
+            match type:
+                case "input":
+                    await manager.send_message(user_input.content, websocket)
+                case "tool_confirm":
+                    await manager.send_message("tool_confirm", websocket)
+                case "tool_reject":
+                    await manager.send_message("tool_reject", websocket)
             async for message in call_agent(agent, user_input):
                 await manager.send_message(message, websocket)
     except WebSocketDisconnect:
