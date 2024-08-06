@@ -90,7 +90,8 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         if thread_ts:
             base_query["chats.checkpoints.thread_ts"] = thread_ts
 
-        projection = {"chats.$": 1} if thread_ts else {"chats": 1}
+        # projection = {"chats.$": 1} if thread_ts else {"chats": 1}
+        projection = {"chats": {"$elemMatch": {"chat_id": chat_id}}}
 
         try:
             result = await self.collection.find_one(base_query, projection)
