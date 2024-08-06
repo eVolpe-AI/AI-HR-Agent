@@ -15,7 +15,7 @@ from agent_api.messages import (
     UserMessageType,
 )
 from agent_graph.graph import compile_workflow, create_graph
-from agent_state.state import GraphState
+from agent_state.state import GraphState, HistoryManagement, HistoryManagementType
 from chat.ChatFactory import ChatFactory
 from database.db_utils import MongoDBUsageTracker
 from prompts.PromptController import PromptController
@@ -44,12 +44,19 @@ class AgentMint:
             streaming=True,
         ).bind_tools(tools)
 
+        history = HistoryManagement(
+            type=HistoryManagementType.N_MESSAGES,
+            number_of_messages=5,
+            create_summary=True,
+        )
+
         self.state = GraphState(
             messages=[],
             user=user_id,
             model=self.model,
             safe_tools=self.safe_tools,
             tool_accept=False,
+            history=history,
         )
 
         self.config = {
@@ -58,6 +65,7 @@ class AgentMint:
                 "user_id": user_id,
             }
         }
+        self.visualize_graph()
 
     def get_tools(self) -> List[Dict[str, Any]]:
         available_tools = ToolController.get_available_tools()
