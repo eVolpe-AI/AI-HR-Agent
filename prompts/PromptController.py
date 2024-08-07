@@ -27,3 +27,16 @@ class PromptController:
     def get_default_prompt(username: str) -> str:
         today = datetime.datetime.now().strftime("%d-%m-%Y")
         return PromptController.default.format(username=username, today=today)
+
+    @staticmethod
+    def get_summary_prompt(prev_summary):
+
+        if prev_summary is not None:
+            return f"""
+                To jest obecne podsumowanie konwersacji: {prev_summary.content[0]["text"]}.
+            Rozbuduj to podsumowanie w oparciu o nowe wiadomości które pojawiły się w trakcie dalszej konwersacji.
+            """
+        return """
+        Utwórz krótkie podsumowanie powyższej konwersacji. Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja. Napisz tylko podsumowanie w formie ciągłego tekstu. 
+        Nie dodawaj żadnego wstępu w stylu 'To jest obecne podsumowanie konwersacji:'.
+        """

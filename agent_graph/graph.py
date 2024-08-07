@@ -65,7 +65,7 @@ def create_graph(tools: list) -> StateGraph:
         {"continue": "gear_manager_node", "end": "output_parsing_node"},
     )
     graph.add_edge("gear_manager_node", "history_manager_node")
-    graph.add_edge("history_manager_node", "gear_manager_node")
+    graph.add_edge("history_manager_node", "llm_node")
     graph.add_conditional_edges(
         "llm_node",
         should_continue,

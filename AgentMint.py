@@ -1,7 +1,7 @@
 import asyncio
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
@@ -44,9 +44,9 @@ class AgentMint:
             streaming=True,
         ).bind_tools(tools)
 
-        history = HistoryManagement(
-            type=HistoryManagementType.N_MESSAGES,
-            number_of_messages=5,
+        history_config = HistoryManagement(
+            management_type=HistoryManagementType.N_MESSAGES.value,
+            number_of_messages=4,
             create_summary=True,
         )
 
@@ -56,7 +56,9 @@ class AgentMint:
             model=self.model,
             safe_tools=self.safe_tools,
             tool_accept=False,
-            history=history,
+            history_config=history_config,
+            conversation_summary=None,
+            system_prompt=None,
         )
 
         self.config = {
@@ -65,7 +67,6 @@ class AgentMint:
                 "user_id": user_id,
             }
         }
-        self.visualize_graph()
 
     def get_tools(self) -> List[Dict[str, Any]]:
         available_tools = ToolController.get_available_tools()
@@ -95,30 +96,32 @@ class AgentMint:
 
     async def invoke(self, message: UserMessage):
         prev_state = await self.app.aget_state(self.config)
-        if not prev_state.values["messages"]:
-            self.state["messages"] = [
-                SystemMessage(content=f"{PromptController.get_simple_prompt()}"),
-            ]
 
-        if message.type == UserMessageType.tool_confirmation.value:
-            self.state["tool_accept"] = True
-        elif message.type == UserMessageType.tool_decline.value:
-            tool_call_message = prev_state.values["messages"][-1].tool_calls[0]
-            self.state["tool_accept"] = False
-            self.state["messages"].append(
-                ToolMessage(
-                    tool_call_id=tool_call_message["id"],
-                    content=f"Wywołanie narzędzia odrzucone przez użytkownika, powód: {message.text if message.text else 'nieznany'}.",
+        self.state["messages"] = prev_state.values["messages"]
+        self.state["conversation_summary"] = prev_state.values.get(
+            "conversation_summary", None
+        )
+        self.state["system_prompt"] = prev_state.values.get("system_prompt", None)
+
+        match message.type:
+            case UserMessageType.tool_confirmation.value:
+                self.state["tool_accept"] = True
+            case UserMessageType.tool_decline.value:
+                tool_call_message = self.state["messages"][-1].tool_calls[0]
+                self.state["tool_accept"] = False
+                self.state["messages"].append(
+                    ToolMessage(
+                        tool_call_id=tool_call_message["id"],
+                        content=f"Wywołanie narzędzia odrzucone przez użytkownika, powód: {message.text if message.text else 'nieznany'}.",
+                    )
                 )
-            )
-        elif message.type == UserMessageType.input.value:
-            self.state["messages"].append(HumanMessage(content=f"{message.text}"))
-            self.state["tool_accept"] = False
-        else:
-            raise ValueError(f"Unknown message type: {message.type}")
+            case UserMessageType.input.value:
+                self.state["messages"].append(HumanMessage(content=f"{message.text}"))
+                self.state["tool_accept"] = False
+            case _:
+                raise ValueError(f"Unknown message type: {message.type}")
 
         yield AgentMessage(type=AgentMessageType.agent_start).to_json()
-
         async for event in self.app.astream_events(
             input=self.state, version="v2", config=self.config
         ):
