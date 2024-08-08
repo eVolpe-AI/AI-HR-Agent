@@ -30,13 +30,16 @@ class PromptController:
 
     @staticmethod
     def get_summary_prompt(prev_summary):
-
         if prev_summary is not None:
+            print("Tworzę podsumowanie na podstawie poprzedniego podsumowania")
             return f"""
-                To jest obecne podsumowanie konwersacji: {prev_summary.content[0]["text"]}.
-            Rozbuduj to podsumowanie w oparciu o nowe wiadomości które pojawiły się w trakcie dalszej konwersacji.
+                To jest obecne podsumowanie konwersacji: {prev_summary}. 
+                Utwórz na jego podstawie oraz wiadomości dostępnych w historii nowe krótkie podsumowanie. 
+                Napisz to w formie ciągłego teskstu i nie dodawaj żadnego wstępu.
+                Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja.
             """
+        print("Tworzę nowe podsumowanie")
         return """
-        Utwórz krótkie podsumowanie powyższej konwersacji. Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja. Napisz tylko podsumowanie w formie ciągłego tekstu. 
-        Nie dodawaj żadnego wstępu w stylu 'To jest obecne podsumowanie konwersacji:'.
+            Utwórz krótkie podsumowanie powyższej konwersacji. Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja. Napisz tylko podsumowanie w formie ciągłego tekstu. 
+            Nie dodawaj żadnego wstępu w stylu 'To jest obecne podsumowanie konwersacji:'.
         """

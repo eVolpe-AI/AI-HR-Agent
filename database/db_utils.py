@@ -243,7 +243,6 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 await self.collection.update_one(
                     {"_id": user_id},
                     {
-                        # "$push": {
                         "$addToSet": {
                             "chats": {
                                 "chat_id": chat_id,
