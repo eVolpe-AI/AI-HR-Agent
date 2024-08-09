@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pickle
 from contextlib import AbstractContextManager
@@ -206,6 +207,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
     ) -> RunnableConfig:
         user_id = config["configurable"]["user_id"]
         chat_id = config["configurable"]["thread_id"]
+        thread_ts = config["configurable"].get("thread_ts")
 
         checkpoint_data = {
             "thread_id": chat_id,
@@ -214,20 +216,34 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
             "metadata": self.serde.dumps(metadata),
         }
 
-        if config["configurable"].get("thread_ts"):
-            checkpoint_data["parent_ts"] = config["configurable"]["thread_ts"]
+        if thread_ts:
+            checkpoint_data["parent_ts"] = thread_ts
 
         try:
+            if thread_ts:
+                while True:
+                    parent_check = await self.collection.find_one(
+                        {
+                            "_id": user_id,
+                            "chats.chat_id": chat_id,
+                            "chats.checkpoints.thread_ts": thread_ts,
+                        },
+                        projection={"_id": 1},
+                    )
+                    if parent_check:
+                        break
+
             result = await self.collection.update_one(
                 {"_id": user_id, "chats.chat_id": chat_id},
                 {"$push": {"chats.$.checkpoints": checkpoint_data}},
+                upsert=False,
             )
 
             if result.matched_count == 0:
                 await self.collection.update_one(
                     {"_id": user_id},
                     {
-                        "$push": {
+                        "$addToSet": {
                             "chats": {
                                 "chat_id": chat_id,
                                 "checkpoints": [checkpoint_data],

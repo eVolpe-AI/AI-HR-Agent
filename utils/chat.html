@@ -210,49 +210,11 @@
         </div>
     </div>
     <script>
-        var client_id = Date.now()
-        document.querySelector("#ws-id").textContent += client_id;
-        var ws = new WebSocket(`ws://localhost:8000/ws/${client_id}`);
-        var currentLlmTextElement = null; 
-        // ws.onmessage = function(event) {
-        //     var chatMessages = document.getElementById('chatMessages');
-        //     var message = JSON.parse(event.data);
-            
-        //     if (message.type === "llm_text") {
-        //         if (currentLlmTextElement === null) {  
-        //             currentLlmTextElement = document.createElement('div');
-        //             currentLlmTextElement.classList.add('chat-message', 'ai-message');
-        //             chatMessages.appendChild(currentLlmTextElement);
-        //         }
-        //         currentLlmTextElement.textContent += message.content; 
-        //     } else {
-        //         var messageElement = document.createElement('div');
-        //         messageElement.classList.add('chat-message');
-                
-        //         if (message.type === "tool_accept") {
-        //             messageElement.classList.add('ai-tool');
-        //             messageElement.innerHTML = "Tool confirmation needed <br><br>";
-        //             messageElement.innerHTML += message.tool_name;
-        //             messageElement.innerHTML += "<br>input: " + message.tool_input;
-        //         } else if (message.type) {
-        //             messageElement.classList.add('ai-debug');
-        //             messageElement.textContent = event.data;
-        //         } else {
-        //             messageElement.classList.add('user-message');
-        //             messageElement.textContent = event.data;
-        //         }
-                
-        //         chatMessages.appendChild(messageElement);
-        //         currentLlmTextElement = null; 
-        //     }
-            
-        //     chatMessages.scrollTop = chatMessages.scrollHeight;
-        // };
-        ws.onmessage = function(event) {
-            var chatMessages = document.getElementById('chatMessages');
-            var messageElement = document.createElement('div');
-            var message = JSON.parse(event.data);
-            messageElement.classList.add('chat-message');
+        var ws;
+        function connectWebSocket() {
+            var chat_id = document.querySelector("#connection_id").value;
+            var username = document.querySelector("#username").value;
+            ws = new WebSocket(`ws://localhost:8000/ws/${username}/${chat_id}`);
 
             ws.onmessage = function(event) {
                 var chatMessages = document.getElementById('chatMessages');

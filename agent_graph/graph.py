@@ -6,6 +6,7 @@ from langgraph.prebuilt import ToolNode
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_graph.nodes.gear_manager import gear_manager
+from agent_graph.nodes.history_manager import history_manager
 from agent_graph.nodes.intent_retrival import intent_retrival
 from agent_graph.nodes.llm_call import llm_call
 from agent_graph.nodes.output_parser import output_parser
@@ -51,6 +52,7 @@ def create_graph(tools: list) -> StateGraph:
     graph.add_node("intent_retrival_node", intent_retrival)
     graph.add_node("gear_manager_node", gear_manager)
     graph.add_node("output_parsing_node", output_parser)
+    graph.add_node("history_manager_node", history_manager)
 
     graph.add_conditional_edges(
         START,
@@ -62,7 +64,8 @@ def create_graph(tools: list) -> StateGraph:
         check_intent,
         {"continue": "gear_manager_node", "end": "output_parsing_node"},
     )
-    graph.add_edge("gear_manager_node", "llm_node")
+    graph.add_edge("gear_manager_node", "history_manager_node")
+    graph.add_edge("history_manager_node", "llm_node")
     graph.add_conditional_edges(
         "llm_node",
         should_continue,

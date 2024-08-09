@@ -10,9 +10,9 @@ from AgentMint import AgentMint
 
 load_dotenv()
 
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = "mintAgent"
+# os.environ["LANGCHAIN_TRACING_V2"] = "true"
+# os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+# os.environ["LANGCHAIN_PROJECT"] = "tokenTest"
 
 
 app = FastAPI()
@@ -52,16 +52,16 @@ async def get():
     return FileResponse("./utils/chat.html")
 
 
-@app.websocket("/ws/{chat_id}/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, chat_id: int, user_id: str):
+@app.websocket("/ws/{user_id}/{chat_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
     await manager.connect(websocket)
     try:
         agent = AgentMint(user_id=user_id, chat_id=chat_id)
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
-            type = user_input.to_json()["type"]
-            match type:
+            message_type = user_input.to_json()["type"]
+            match message_type:
                 case "input":
                     await manager.send_message(user_input.content, websocket)
                 case "tool_confirm":
@@ -78,7 +78,7 @@ async def websocket_endpoint(websocket: WebSocket, chat_id: int, user_id: str):
 async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
     await manager.connect(websocket)
     try:
-        agent = AgentMint(username="admin", chat_id=chat_id)
+        agent = AgentMint(user_id="admin", chat_id=chat_id)
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
