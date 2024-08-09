@@ -1,68 +1,55 @@
 from enum import Enum
+from typing import Dict, Optional
 
 
 class UserMessageType(Enum):
-    input = "input"
-    tool_confirmation = "tool_confirmation"
-    tool_decline = "tool_rejection"
+    INPUT = "input"
+    TOOL_CONFIRM = "tool_confirm"
+    TOOL_REJECT = "tool_reject"
 
     def __str__(self):
         return self.value
 
 
 class AgentMessageType(Enum):
-    agent_start = "agent_start"
-    agent_end = "agent_end"
-    llm_start = "llm_start"
-    llm_end = "llm_end"
-    llm_text = "llm_text"
-    tool_accept = "tool_accept"
-    tool_start = "tool_start"
-    tool_end = "tool_end"
+    AGENT_START = "agent_start"
+    AGENT_END = "agent_end"
+    LLM_START = "llm_start"
+    LLM_END = "llm_end"
+    LLM_TEXT = "llm_text"
+    ACCEPT_REQUEST = "accept_request"
+    TOOL_START = "tool_start"
+    TOOL_END = "tool_end"
+    ERROR = "error"
 
     def __str__(self):
         return self.value
 
 
 class AgentMessage:
-    type: AgentMessageType
-    text: str | None = None
-    tool: str | None = None
-    tool_input: str | None = None
-    tool_name: str | None = None
-
     def __init__(
         self,
         type: AgentMessageType,
-        text: str | None = None,
-        tool: str | None = None,
-        tool_input: str | None = None,
-        tool_name: str | None = None,
+        content: Optional[str] = None,
+        tool_name: Optional[str] = None,
+        tool_input: Optional[str] = None,
     ):
         self.type = type
-        self.text = text
-        self.tool = tool
+        self.content = content
         self.tool_input = tool_input
         self.tool_name = tool_name
 
-    def to_json(self) -> dict[str, str]:
+    def to_json(self) -> Dict[str, str]:
         return {k: str(v) for k, v in self.__dict__.items() if v is not None}
 
 
 class UserMessage:
-    type: UserMessageType
-    text: str | None = None
-    is_tool_confirmed: bool | None = None
-    tool_confirmation_message: str | None = None
-    chat_history: dict[str, str] | None = None
-
-    def __init__(self, input_json: dict[str, str]):
+    def __init__(self, input_json: Dict[str, str]):
+        if "type" not in input_json:
+            raise ValueError("Missing 'type' key in input_json")
         self.type = input_json["type"]
-        if "text" in input_json:
-            self.text = input_json["text"]
-        if "is_tool_confirmed" in input_json:
-            self.is_tool_confirmed = input_json["is_tool_confirmed"]
-        if "tool_confirmation_message" in input_json:
-            self.tool_confirmation_message = input_json["tool_confirmation_message"]
-        if "chat_history" in input_json:
-            self.chat_history = input_json["tool_confirmation_message"]
+        if "content" in input_json:
+            self.content = input_json["content"]
+
+    def to_json(self) -> Dict[str, str]:
+        return {k: str(v) for k, v in self.__dict__.items() if v is not None}
