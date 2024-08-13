@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Dict, Optional
 
+from loguru import logger
+
 
 class UserMessageType(Enum):
     INPUT = "input"
@@ -46,6 +48,7 @@ class AgentMessage:
 class UserMessage:
     def __init__(self, input_json: Dict[str, str]):
         if "type" not in input_json:
+            logger.error(f"Missing 'type' key in input_json: {input_json}")
             raise ValueError("Missing 'type' key in input_json")
         self.type = input_json["type"]
         if "content" in input_json:

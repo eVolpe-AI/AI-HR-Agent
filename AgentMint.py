@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, ToolMessage
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_api.messages import (
@@ -19,15 +20,18 @@ from agent_state.state import GraphState, HistoryManagement, HistoryManagementTy
 from chat.ChatFactory import ChatFactory
 from database.db_utils import MongoDBUsageTracker
 from tools.ToolController import ToolController
+from utils.logging import Agent_logger
 from utils.mock_streaming import stream_lorem_ipsum
 
 load_dotenv()
 
 
 class AgentMint:
-    def __init__(self, user_id: str, chat_id: str):
+    def __init__(self, user_id: str, chat_id: str, ip_addr: str) -> None:
         tools = self.get_tools()
+        self.chat_id = chat_id
         self.user_id = user_id
+        self.ip_addr = ip_addr
         self.safe_tools = ToolController.get_safe_tools()
         self.graph = create_graph(tools)
         self.app = compile_workflow(self.graph, user_id)
@@ -69,7 +73,11 @@ class AgentMint:
         }
 
     async def get_prev_state(self) -> None:
-        prev_state = await self.app.aget_state(self.config)
+        try:
+            prev_state = await self.app.aget_state(self.config)
+        except Exception as e:
+            logger.error(f"Failed to get previous state: {e}")
+            return
 
         self.state["messages"] = prev_state.values["messages"]
         self.state["conversation_summary"] = prev_state.values.get(
@@ -108,6 +116,8 @@ class AgentMint:
 
     async def invoke(self, message: UserMessage):
         await self.get_prev_state()
+        agent_logger = Agent_logger(self.user_id, self.chat_id, self.ip_addr)
+        agent_logger.start(self.state)
 
         match message.type:
             case UserMessageType.INPUT.value:
@@ -135,6 +145,7 @@ class AgentMint:
                 raise ValueError(f"Unknown message type: {message.type}")
 
         yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
+        
 
         async for event in self.app.astream_events(
             input=self.state, version="v2", config=self.config
@@ -156,7 +167,10 @@ class AgentMint:
                         "tokens": event["data"]["output"].usage_metadata,
                         "time": datetime.now(),
                     }
+                    self.state["messages"].append(event["data"]["output"])
                     await self.usage_tracker.push_token_usage(usage_data)
+                    self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
+                    agent_logger.set_usage_data(usage_data)
                     output = AgentMessage(type=AgentMessageType.LLM_END)
                 case "on_tool_start":
                     output = AgentMessage(
@@ -180,3 +194,5 @@ class AgentMint:
                 yield output.to_json()
 
         yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
+        agent_logger.end(self.state)
+

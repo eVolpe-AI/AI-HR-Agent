@@ -16,8 +16,8 @@ class HistoryManagementType(Enum):
         NONE: No history management, keep all messages in memory.
     """
 
-    KEEP_N_MESSAGES = "n_messages"
-    KEEP_N_TOKENS = "n_tokens"
+    KEEP_N_MESSAGES = "keep_n_messages"
+    KEEP_N_TOKENS = "keen_n_tokens"
     SUMMARIZE_N_MESSAGES = "summarize_n_messages"
     SUMMARIZE_N_TOKENS = "summarize_n_tokens"
     NONE = "none"
