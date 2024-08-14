@@ -1,7 +1,6 @@
 from langchain_core.messages import SystemMessage
-from loguru import logger
 
-from utils.utils import pretty_print_messages
+from utils.errors import AgentError
 
 
 async def llm_call(state):
@@ -11,17 +10,14 @@ async def llm_call(state):
 
     if conversation_summary is not None:
         system_prompt = f"{state["system_prompt"]} Oto podsumowanie naszej dotychczasowej rozmowy: {conversation_summary}"
-    else: 
+    else:
         system_prompt = state["system_prompt"]
-        
+
     messages_for_llm = [SystemMessage(content=system_prompt), *messages]
 
-    # logger.debug(f"Calling LLM model with messages: {messages_for_llm}")
-    
     try:
         response = await model.ainvoke(messages_for_llm)
     except Exception as e:
-        logger.error(f"Failed to call LLM model: {e}")
-        return {"messages": []}
+        raise AgentError("Failed to call LLM model") from e
 
     return {"messages": response}

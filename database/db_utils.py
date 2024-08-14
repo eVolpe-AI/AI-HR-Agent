@@ -17,6 +17,8 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing_extensions import Self
 
+# TODO Adjusting to the newer version of the checkpoint system. Requires langgraph 0.2.3
+
 
 class JsonPlusSerializerCompat(JsonPlusSerializer):
     def loads(self, data: bytes) -> Any:
@@ -81,7 +83,6 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         if thread_ts:
             base_query["chats.checkpoints.thread_ts"] = thread_ts
 
-        # projection = {"chats.$": 1} if thread_ts else {"chats": 1}
         projection = {"chats": {"$elemMatch": {"chat_id": chat_id}}}
 
         try:

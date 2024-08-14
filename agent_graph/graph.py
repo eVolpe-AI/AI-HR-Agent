@@ -46,6 +46,7 @@ def check_message_type(state) -> str:
 def create_graph(tools: list) -> StateGraph:
     graph = StateGraph(GraphState)
 
+    # TODO Add retry policies to nodes. Requires langgraph 0.2.3
     graph.add_node("llm_node", llm_call)
     graph.add_node("tool_node", ToolNode(tools))
     graph.add_node("tool_controller_node", tool_permit)
@@ -85,7 +86,6 @@ def create_graph(tools: list) -> StateGraph:
 def compile_workflow(graph: StateGraph, username: str) -> CompiledGraph:
     MONGO_URI = os.getenv("MONGO_URI")
     DB_NAME = os.getenv("DB_NAME")
-
     checkpointer = MongoDBCheckpointSaver(
         AsyncIOMotorClient(MONGO_URI), DB_NAME, username
     )

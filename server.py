@@ -1,10 +1,13 @@
+import traceback
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 from loguru import logger
 
-from agent_api.messages import UserMessage
+from agent_api.messages import AgentMessage, AgentMessageType, UserMessage
 from AgentMint import AgentMint
+from utils.errors import ServerError
 from utils.logging import configure_logging
 
 configure_logging()
@@ -12,7 +15,6 @@ configure_logging()
 # os.environ["LANGCHAIN_TRACING_V2"] = "true"
 # os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 # os.environ["LANGCHAIN_PROJECT"] = "tokenTest"
-
 
 app = FastAPI()
 
@@ -82,30 +84,33 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
                     logger.debug(
                         f"Received input message: '{user_input.content}' from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
                     )
-                    await manager.send_message(user_input.content, websocket)
                 case "tool_confirm":
                     logger.debug(
                         f"Received tool confirmation from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
                     )
-                    await manager.send_message("tool_confirm", websocket)
                 case "tool_reject":
                     logger.debug(
                         f"Received tool rejection: {user_input.content}' from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
                     )
-                    await manager.send_message("tool_reject", websocket)
                 case _:
-                    logger.error(
-                        f"Invalid message type received: {message_type} from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
-                    )
+                    raise ServerError(f"Invalid message type received: {message_type}")
 
             async for message in call_agent(agent, user_input):
                 await manager.send_message(message, websocket)
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(
-            f"Error in connection with {websocket.client}, user_id: {user_id}, chat_id: {chat_id}: {e}"
-        )
+    except ServerError as e:
+        logger.error(f"Server error: {websocket.client} {traceback.format_exc()}")
+        message = AgentMessage(type=AgentMessageType.ERROR, content=e.message).to_json()
+        await manager.send_message(message, websocket)
+        await manager.disconnect(websocket)
+        raise
+    except Exception:
+        message = AgentMessage(
+            type=AgentMessageType.ERROR, content="Internal error occurred"
+        ).to_json()
+        await manager.send_message(message, websocket)
+        await manager.disconnect(websocket)
         raise
 
 

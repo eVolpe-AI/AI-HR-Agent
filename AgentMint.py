@@ -48,7 +48,7 @@ class AgentMint:
         ).bind_tools(tools)
 
         history_config = HistoryManagement(
-            management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
+            management_type=HistoryManagementType.SUMMARIZE_N_MESSAGES.value,
             number_of_messages=5,
             number_of_tokens=430,
         )
@@ -77,7 +77,7 @@ class AgentMint:
             prev_state = await self.app.aget_state(self.config)
         except Exception as e:
             logger.error(f"Failed to get previous state: {e}")
-            return
+            raise
 
         self.state["messages"] = prev_state.values["messages"]
         self.state["conversation_summary"] = prev_state.values.get(
@@ -119,80 +119,87 @@ class AgentMint:
         agent_logger = Agent_logger(self.user_id, self.chat_id, self.ip_addr)
         agent_logger.start(self.state)
 
-        match message.type:
-            case UserMessageType.INPUT.value:
-                self.state["messages"].append(
-                    HumanMessage(content=f"{message.content}")
-                )
-                self.state["tool_accept"] = False
-            case UserMessageType.TOOL_CONFIRM.value:
-                self.state["tool_accept"] = True
-            case UserMessageType.TOOL_REJECT.value:
-                tool_call_message = self.state["messages"][-1].tool_calls[0]
-                self.state["tool_accept"] = False
-                self.state["messages"].append(
-                    ToolMessage(
-                        tool_call_id=tool_call_message["id"],
-                        content="Wywołanie narzędzia odrzucone przez użytkownika.",
+        try:
+            match message.type:
+                case UserMessageType.INPUT.value:
+                    self.state["messages"].append(
+                        HumanMessage(content=f"{message.content}")
                     )
-                )
-                self.state["messages"].append(
-                    HumanMessage(
-                        content=f"Odrzuciłem użycie narzędzia {tool_call_message["name"]} z powodu: {message.content if message.content else 'brak powodu'}"
-                    )
-                )
-            case _:
-                raise ValueError(f"Unknown message type: {message.type}")
-
-        yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
-        
-
-        async for event in self.app.astream_events(
-            input=self.state, version="v2", config=self.config
-        ):
-            event_kind = event["event"]
-            output = None
-
-            match event_kind:
-                case "on_chat_model_stream":
-                    content = event["data"]["chunk"].content
-                    if content and content[-1]["type"] == "text":
-                        output = AgentMessage(
-                            type=AgentMessageType.LLM_TEXT, content=content[-1]["text"]
+                    self.state["tool_accept"] = False
+                case UserMessageType.TOOL_CONFIRM.value:
+                    self.state["tool_accept"] = True
+                case UserMessageType.TOOL_REJECT.value:
+                    tool_call_message = self.state["messages"][-1].tool_calls[0]
+                    self.state["tool_accept"] = False
+                    self.state["messages"].append(
+                        ToolMessage(
+                            tool_call_id=tool_call_message["id"],
+                            content="Wywołanie narzędzia odrzucone przez użytkownika.",
                         )
-                case "on_chat_model_start":
-                    output = AgentMessage(type=AgentMessageType.LLM_START)
-                case "on_chat_model_end":
-                    usage_data = {
-                        "tokens": event["data"]["output"].usage_metadata,
-                        "time": datetime.now(),
-                    }
-                    self.state["messages"].append(event["data"]["output"])
-                    await self.usage_tracker.push_token_usage(usage_data)
-                    self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
-                    agent_logger.set_usage_data(usage_data)
-                    output = AgentMessage(type=AgentMessageType.LLM_END)
-                case "on_tool_start":
-                    output = AgentMessage(
-                        type=AgentMessageType.TOOL_START,
-                        tool_name=event["name"],
-                        tool_input=event["data"]["input"],
                     )
-                case "on_tool_end":
-                    output = AgentMessage(
-                        type=AgentMessageType.TOOL_END,
-                    )
-                case "on_custom_event":
-                    if event["name"] == "tool_accept":
-                        output = AgentMessage(
-                            type=AgentMessageType.ACCEPT_REQUEST,
-                            tool_input=event["data"]["params"],
-                            tool_name=event["data"]["tool"],
+                    self.state["messages"].append(
+                        HumanMessage(
+                            content=f"Odrzuciłem użycie narzędzia {tool_call_message["name"]} z powodu: {message.content if message.content else 'brak powodu'}"
                         )
+                    )
+                case _:
+                    raise ValueError(f"Unknown message type: {message.type}")
 
-            if output:
-                yield output.to_json()
+            yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
+            
 
-        yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
+            async for event in self.app.astream_events(
+                input=self.state, version="v2", config=self.config
+            ):
+                event_kind = event["event"]
+                output = None
+    
+                match event_kind:
+                    case "on_chat_model_stream":
+                        content = event["data"]["chunk"].content
+                        if content and content[-1]["type"] == "text":
+                            output = AgentMessage(
+                                type=AgentMessageType.LLM_TEXT, content=content[-1]["text"]
+                            )
+                    case "on_chat_model_start":
+                        output = AgentMessage(type=AgentMessageType.LLM_START)
+                    case "on_chat_model_end":
+                        usage_data = {
+                            "tokens": event["data"]["output"].usage_metadata,
+                            "time": datetime.now(),
+                        }
+                        self.state["messages"].append(event["data"]["output"])
+                        await self.usage_tracker.push_token_usage(usage_data)
+                        self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
+                        agent_logger.set_usage_data(usage_data)
+                        output = AgentMessage(type=AgentMessageType.LLM_END)
+                    case "on_tool_start":
+                        output = AgentMessage(
+                            type=AgentMessageType.TOOL_START,
+                            tool_name=event["name"],
+                            tool_input=event["data"]["input"],
+                        )
+                    case "on_tool_end":
+                        output = AgentMessage(
+                            type=AgentMessageType.TOOL_END,
+                        )
+                    case "on_custom_event":
+                        if event["name"] == "tool_accept":
+                            output = AgentMessage(
+                                type=AgentMessageType.ACCEPT_REQUEST,
+                                tool_input=event["data"]["params"],
+                                tool_name=event["data"]["tool"],
+                            )
+
+                if output:
+                    yield output.to_json()
+
+            yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
+        except Exception as e:
+            await self.get_prev_state()
+            agent_logger.end_error(self.state, e)
+            raise 
+
+        await self.get_prev_state()
         agent_logger.end(self.state)
 

@@ -6,6 +6,7 @@ from loguru import logger
 
 from agent_state.state import GraphState, HistoryManagementType
 from prompts.PromptController import PromptController
+from utils.errors import AgentError
 
 
 async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
@@ -20,8 +21,7 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
     try:
         summary = await llm_model.ainvoke(messages_to_summarize)
     except Exception as e:
-        logger.error(f"Failed to summarize conversation: {e}")
-        return ""
+        raise AgentError("Failed to call LLM to summarize conversation") from e
 
     return summary.content[0]["text"]
 
@@ -48,7 +48,6 @@ def history_manager(state: GraphState) -> GraphState:
     match history_config["management_type"]:
         case HistoryManagementType.KEEP_N_MESSAGES.value:
             if len(messages) > history_config["number_of_messages"]:
-                # logger.debug("Trimming message history")
                 num_of_messages_to_delete = (
                     len(messages) - history_config["number_of_messages"]
                 )
@@ -62,7 +61,6 @@ def history_manager(state: GraphState) -> GraphState:
 
         case HistoryManagementType.KEEP_N_TOKENS.value:
             if state["history_token_count"] > history_config["number_of_tokens"]:
-                # logger.debug("Trimming message history")
                 new_messages.append(RemoveMessage(id=messages[0].id))
                 i = 1
                 while messages[i].type != "human" and i < len(messages):
@@ -85,7 +83,6 @@ def history_manager(state: GraphState) -> GraphState:
             raise ValueError(f"Invalid history type {history_config['type']}")
 
     if messages_to_summarize:
-        # logger.debug("Summarizing message history")
         summary = asyncio.run(prepare_summary(messages_to_summarize, state))
         return {
             "messages": new_messages,

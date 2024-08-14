@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import traceback
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -21,7 +22,6 @@ def configure_logging():
     logger.remove(0)
     logger.add(log_file, level=log_level)
     if log_to_console == "TRUE":
-        print("logging to console")
         logger.add(sys.stdout, level=log_level)
 
 
@@ -56,7 +56,8 @@ class Agent_logger:
         self.end_time = time.time_ns()
         self._save_log()
 
-    def set_error(self, error: str) -> None:
+    def end_error(self, state: GraphState, error: Exception) -> None:
+        self.end_state = self._format_state(state)
         self.end_time = time.time_ns()
         self.error = error
         self._save_log(error=True)
@@ -74,7 +75,7 @@ class Agent_logger:
         )
 
         if error:
-            log_message += f"\n{INDENT}<red>Error:</red> {self.error}"
+            log_message += f"\n{INDENT}<red>Error:</red>\n{traceback.format_exc()}"
             logger.opt(colors=True if log_coloring == "TRUE" else False).error(
                 log_message
             )
