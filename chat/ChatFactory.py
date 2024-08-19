@@ -1,4 +1,4 @@
-import os
+from typing import Optional
 
 # from chat.ChatGptAzureController import ChatGptAzureController
 # from llm.Qra13bController import Qra13bController
@@ -8,7 +8,7 @@ from chat.AnthropicController import AnthropicController
 # from llm.MixtralController import MixtralController
 # from llm.MistralController import MistralController
 # from chat.ChatGptController import ChatGptController
-from dotenv import load_dotenv
+
 
 # from chat.AnthropicBedrockController import AnthropicBedrockController
 
@@ -47,36 +47,26 @@ class ChatFactory:
     }
 
     @staticmethod
-    def get_model(provider, model_name):
+    def get_model_controller(
+        provider: str, model_name: str, tools: Optional[list] = None
+    ):
+        tools = tools or []
 
-        # check if model_name is in the list of models for the provider
+        if provider not in ChatFactory.model_controllers:
+            raise ValueError(f"Model provider {provider} not supported")
+
         if model_name not in ChatFactory.models[provider]:
-            raise Exception(f"Model {model_name} not supported for provider {provider}")
-        base_url = ChatFactory.get_model_param(provider, "BASE_URL", "")
-        api_key = ChatFactory.get_model_param(provider, "API_KEY", "")
-        temperature = ChatFactory.get_model_param(provider, "TEMPERATURE", 0.0)
+            raise ValueError(
+                f"Model {model_name} not supported for provider {provider}"
+            )
 
-        if provider in ChatFactory.model_controllers:
-            controller_class = ChatFactory.model_controllers[provider]
-            controller = controller_class(model_name, base_url, api_key, temperature)
-            print(f"Provider {provider}")
-            print(f"Model {model_name}")
-            print(f"Controller {controller.__class__.__name__}")
-            return controller.getClient()
-        else:
-            raise Exception(f"Model provider {provider} not supported")
+        controller_class = ChatFactory.model_controllers[provider]
+        return controller_class(model_name=model_name, tools=tools)
 
     @staticmethod
-    def get_models(provider):
+    def get_models(provider: str) -> list[str]:
         return ChatFactory.models[provider]
 
     @staticmethod
-    def get_providers():
-        return ChatFactory.models.keys()
-
-    @staticmethod
-    def get_model_param(provider, param_name, default=None):
-        load_dotenv()
-        cstm_param_name = provider + "_" + param_name
-        param = os.getenv(cstm_param_name, os.getenv(param_name, default))
-        return param
+    def get_providers() -> list[str]:
+        return list(ChatFactory.models.keys())

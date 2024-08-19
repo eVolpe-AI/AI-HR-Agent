@@ -188,12 +188,17 @@
         <div class="chat-header">
             <div class="input-box">
                 <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" value="admin">
-            </div>
-            <div>
-                <label for="connection_id">Chat ID:</label>
-                <input type="text" id="connection_id" value="1"></div>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" value="admin">
+                </div>
+                <div>
+                    <label for="connection_id">Chat ID:</label>
+                    <input type="text" id="connection_id" value="1">
+                </div>
+                <div>
+                    <label for="advanced">Advanced user:</label>
+                    <input type="checkbox" id="advanced" name="advanced" value="True">
+                </div>
             </div>
             <div class="button-box">
                 <button id="connect">Connect</button>
@@ -220,7 +225,8 @@
         function connectWebSocket() {
             var chat_id = document.querySelector("#connection_id").value;
             var username = document.querySelector("#username").value;
-            ws = new WebSocket(`ws://localhost:8000/ws/${username}/${chat_id}`);
+            var advanced = document.querySelector("#advanced").checked;
+            ws = new WebSocket(`ws://localhost:8000/ws/${username}/${chat_id}?advanced=${advanced}`);
 
             ws.onmessage = function(event) {
                 var chatMessages = document.getElementById('chatMessages');
@@ -245,19 +251,20 @@
                         <strong>Input:</strong> ${message.tool_input}<br>
                     `;
                     chatMessages.appendChild(messageElement);
-                    lastAIMessageElement = null; // Reset for next LLM text message
+                    lastAIMessageElement = null; 
                 } else if (message.type === "error") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'error');
                     messageElement.textContent = message.content;
                     chatMessages.appendChild(messageElement);
-                } else if (message.type === "llm_end") {
-                    lastAIMessageElement = null;
                 } else if (message.type) {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-debug');
                     messageElement.textContent = event.data;
                     chatMessages.appendChild(messageElement);
+                    if (message.type == "llm_end") {
+                        lastAIMessageElement = null;
+                    }
                 } else {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'user-message');
@@ -280,49 +287,6 @@
                 console.log("Error: ", event);
             };
         }
-        // function connectWebSocket() {
-        //     var chat_id = document.querySelector("#connection_id").value;
-        //     var username = document.querySelector("#username").value;
-        //     ws = new WebSocket(`ws://localhost:8000/ws/${username}/${chat_id}`);
-
-        //     ws.onmessage = function(event) {
-        //         var chatMessages = document.getElementById('chatMessages');
-        //         var messageElement = document.createElement('div');
-        //         var message = JSON.parse(event.data);
-        //         messageElement.classList.add('chat-message');
-
-        //         if (message.type === "llm_text") {
-        //             messageElement.classList.add('ai-message');
-        //             messageElement.textContent = event.data;
-        //         } else if (message.type === "tool_accept") {
-        //             messageElement.classList.add('ai-tool');
-        //             messageElement.innerHTML= "Tool confirmation needed <br><br>";
-        //             messageElement.innerHTML += message.tool_name;
-        //             messageElement.innerHTML += "<br>input: " + message.tool_input;
-        //         } else if (message.type) {
-        //             messageElement.classList.add('ai-debug');
-        //             messageElement.textContent = event.data;
-        //         } else {
-        //             messageElement.classList.add('user-message');
-        //             messageElement.textContent = event.data;
-        //         }
-
-        //         chatMessages.appendChild(messageElement);
-        //         chatMessages.scrollTop = chatMessages.scrollHeight;
-        //     };
-
-        //     ws.onopen = function(event) {
-        //         console.log("Connection established");
-        //     };
-
-        //     ws.onclose = function(event) {
-        //         console.log("Connection closed");
-        //     };
-
-        //     ws.onerror = function(event) {
-        //         console.log("Error: ", event);
-        //     };
-        // }
 
         function addMessageToChat(content, className) {
             var chatMessages = document.getElementById('chatMessages');
