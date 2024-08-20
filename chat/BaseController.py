@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from langchain_core.messages import AIMessage
+
 
 class BaseController(ABC):
     """Abstract base class for controlling conversation models"""
 
     @abstractmethod
-    async def get_output(self, messages):
+    async def get_output(self, messages) -> AIMessage:
         """
         Get the output from the model for the given messages.
 
@@ -18,8 +20,9 @@ class BaseController(ABC):
         """
         raise NotImplementedError
 
+    # TODO async version causes asyncio error
     @abstractmethod
-    def get_summary(self, messages):
+    def get_summary(self, messages) -> AIMessage:
         """
         Get a summary of the given messages from the model.
 

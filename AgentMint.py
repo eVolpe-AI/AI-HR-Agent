@@ -15,6 +15,7 @@ from agent_api.messages import (
 )
 from agent_graph.graph import compile_workflow, create_graph
 from agent_state.state import GraphState, HistoryManagement, HistoryManagementType
+from chat.ChatFactory import ProviderConfig
 from database.db_utils import MongoDBUsageTracker
 from tools.ToolController import ToolController
 from utils.logging import Agent_logger
@@ -63,6 +64,8 @@ class AgentMint:
                 user=self.user_id,
                 provider="ANTHROPIC",
                 model_name="claude-3-haiku-20240307",
+                # provider="OPENAI",
+                # model_name="gpt-4o-mini-2024-07-18",
                 tools=ToolController.get_default_tools(),
                 safe_tools=ToolController.get_safe_tools(),
                 tool_accept=prev_state.values.get("tool_accept", False),
@@ -121,7 +124,7 @@ class AgentMint:
             self.agent_logger.end_error(self.state, e)
             raise 
         
-        await self.set_state()
+        self.state = await self.set_state()
         self.agent_logger.end(self.state)
 
 
@@ -174,27 +177,35 @@ class AgentMint:
         """
         event_kind = event["event"]
         output = None
-
         match event_kind:
             case "on_chat_model_stream":
                 if "silent" not in event["tags"]:
                     content = event["data"]["chunk"].content
-                    if content and content[-1]["type"] == "text":
-                        output = AgentMessage(
-                            type=AgentMessageType.LLM_TEXT, content=content[-1]["text"]
-                        )
+                    if content:
+                        if isinstance(content, str):
+                            output = AgentMessage(
+                                type=AgentMessageType.LLM_TEXT, content=content
+                            )
+                        elif content[-1]["type"] == "text":
+                            output = AgentMessage(
+                                type=AgentMessageType.LLM_TEXT,
+                                content=content[-1]["text"],
+                            )
             case "on_chat_model_start":
                 output = AgentMessage(type=AgentMessageType.LLM_START)
             case "on_chat_model_end":
                 output = AgentMessage(type=AgentMessageType.LLM_END)
-                usage_data = {
-                    "tokens": event["data"]["output"].usage_metadata,
-                    "time": datetime.now(),
-                }
+                returns_usage_data = ProviderConfig.get_param(self.state["provider"], "returns_usage_data")
                 self.state["messages"].append(event["data"]["output"])
-                await self.usage_tracker.push_token_usage(usage_data)
-                self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
-                self.agent_logger.set_usage_data(usage_data)
+                
+                if returns_usage_data:
+                    usage_data = {
+                        "tokens": event["data"]["output"].usage_metadata,
+                        "time": datetime.now(),
+                    }
+                    await self.usage_tracker.push_token_usage(usage_data)
+                    self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
+                    self.agent_logger.set_usage_data(usage_data)
             case "on_tool_start":
                 if self.is_advanced:
                     output = AgentMessage(

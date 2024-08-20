@@ -22,7 +22,6 @@ async def llm_call(state):
 
     try:
         model = ChatFactory.get_model_controller(provider, model_name, tools)
-        #response = await model.ainvoke(messages_for_llm)
         response = await model.get_output(messages_for_llm)
     except Exception as e:
         raise AgentError("Failed to call LLM model") from e

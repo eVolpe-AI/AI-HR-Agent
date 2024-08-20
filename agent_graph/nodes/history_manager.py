@@ -26,7 +26,11 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
     except Exception as e:
         raise AgentError("Failed to call LLM to summarize conversation") from e
 
-    return summary.content[0]["text"]
+    if isinstance(summary.content, str):
+        print(f"Summary content: {summary.content}")
+        return summary.content
+    else:
+        return summary.content[-1]["text"]
 
 
 def clear_message_history(messages: list[Any]) -> tuple[list[Any], list[Any]]:
