@@ -68,6 +68,12 @@
             background-color: #c6abfb;
         }
 
+        .error {
+            background-color: #e72424;
+            color: white;
+            animation: fadeOut 5s forwards;
+        }
+
         .chat-input {
             display: flex;
             padding: 10px;
@@ -180,8 +186,6 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h2>mintHCM Agent</h2>
-            <h4 id="ws-id">Room id: </h4>
             <div class="input-box">
                 <div>
                 <label for="username">Username:</label>
@@ -211,6 +215,8 @@
     </div>
     <script>
         var ws;
+        var lastAIMessageElement = null;
+
         function connectWebSocket() {
             var chat_id = document.querySelector("#connection_id").value;
             var username = document.querySelector("#username").value;
@@ -218,27 +224,47 @@
 
             ws.onmessage = function(event) {
                 var chatMessages = document.getElementById('chatMessages');
-                var messageElement = document.createElement('div');
                 var message = JSON.parse(event.data);
-                messageElement.classList.add('chat-message');
-
+                
                 if (message.type === "llm_text") {
-                    messageElement.classList.add('ai-message');
-                    messageElement.textContent = event.data;
-                } else if (message.type === "tool_accept") {
-                    messageElement.classList.add('ai-tool');
-                    messageElement.innerHTML= "Tool confirmation needed <br><br>";
-                    messageElement.innerHTML += message.tool_name;
-                    messageElement.innerHTML += "<br>input: " + message.tool_input;
+                    if (lastAIMessageElement) {
+                        lastAIMessageElement.innerHTML += message.content;
+                    } else {
+                        var messageElement = document.createElement('div');
+                        messageElement.classList.add('chat-message', 'ai-message');
+                        messageElement.innerHTML = message.content;
+                        chatMessages.appendChild(messageElement);
+                        lastAIMessageElement = messageElement;
+                    }
+                } else if (message.type === "accept_request") {
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'ai-tool');
+                    messageElement.innerHTML = `
+                        <strong>Tool Request:</strong><br>
+                        <strong>Tool Name:</strong> ${message.tool_name}<br>
+                        <strong>Input:</strong> ${message.tool_input}<br>
+                    `;
+                    chatMessages.appendChild(messageElement);
+                    lastAIMessageElement = null; // Reset for next LLM text message
+                } else if (message.type === "error") {
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'error');
+                    messageElement.textContent = message.content;
+                    chatMessages.appendChild(messageElement);
+                } else if (message.type === "llm_end") {
+                    lastAIMessageElement = null;
                 } else if (message.type) {
-                    messageElement.classList.add('ai-debug');
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'ai-debug');
                     messageElement.textContent = event.data;
+                    chatMessages.appendChild(messageElement);
                 } else {
-                    messageElement.classList.add('user-message');
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'user-message');
                     messageElement.textContent = event.data;
+                    chatMessages.appendChild(messageElement);
                 }
 
-                chatMessages.appendChild(messageElement);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             };
 
@@ -254,6 +280,59 @@
                 console.log("Error: ", event);
             };
         }
+        // function connectWebSocket() {
+        //     var chat_id = document.querySelector("#connection_id").value;
+        //     var username = document.querySelector("#username").value;
+        //     ws = new WebSocket(`ws://localhost:8000/ws/${username}/${chat_id}`);
+
+        //     ws.onmessage = function(event) {
+        //         var chatMessages = document.getElementById('chatMessages');
+        //         var messageElement = document.createElement('div');
+        //         var message = JSON.parse(event.data);
+        //         messageElement.classList.add('chat-message');
+
+        //         if (message.type === "llm_text") {
+        //             messageElement.classList.add('ai-message');
+        //             messageElement.textContent = event.data;
+        //         } else if (message.type === "tool_accept") {
+        //             messageElement.classList.add('ai-tool');
+        //             messageElement.innerHTML= "Tool confirmation needed <br><br>";
+        //             messageElement.innerHTML += message.tool_name;
+        //             messageElement.innerHTML += "<br>input: " + message.tool_input;
+        //         } else if (message.type) {
+        //             messageElement.classList.add('ai-debug');
+        //             messageElement.textContent = event.data;
+        //         } else {
+        //             messageElement.classList.add('user-message');
+        //             messageElement.textContent = event.data;
+        //         }
+
+        //         chatMessages.appendChild(messageElement);
+        //         chatMessages.scrollTop = chatMessages.scrollHeight;
+        //     };
+
+        //     ws.onopen = function(event) {
+        //         console.log("Connection established");
+        //     };
+
+        //     ws.onclose = function(event) {
+        //         console.log("Connection closed");
+        //     };
+
+        //     ws.onerror = function(event) {
+        //         console.log("Error: ", event);
+        //     };
+        // }
+
+        function addMessageToChat(content, className) {
+            var chatMessages = document.getElementById('chatMessages');
+            var messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message');
+            messageElement.classList.add(className);
+            messageElement.textContent = content;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
         
         function sendMessage(event) {
             var input = document.getElementById("userInput")
@@ -262,6 +341,7 @@
                 content: input.value
             }
             ws.send(JSON.stringify(message))
+            addMessageToChat(input.value, 'user-message')
             input.value = ''
             event.preventDefault()
         }
@@ -274,16 +354,12 @@
             closeWebSocket()
             connectWebSocket()
         }
-
-        document.getElementById('connect').addEventListener('click', connectWebSocket);
-        document.getElementById('close').addEventListener('click', closeWebSocket);
-        document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
-
         
         function sendConfirmation() {
             var message = {
                 type: "tool_confirm",
             }
+            addMessageToChat("Tool Confirmed", 'user-message')
             ws.send(JSON.stringify(message))
         }
 
@@ -294,8 +370,13 @@
                 content: input.value
             }
             input.value = ''
+            addMessageToChat("Tool Declined: " + message.content, 'user-message')
             ws.send(JSON.stringify(message))
         }
+
+        document.getElementById('connect').addEventListener('click', connectWebSocket);
+        document.getElementById('close').addEventListener('click', closeWebSocket);
+        document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
         document.getElementById("confirm").addEventListener("click", sendConfirmation)
         document.getElementById("decline").addEventListener("click", sendDecline)
     </script>

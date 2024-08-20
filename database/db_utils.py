@@ -1,5 +1,3 @@
-import asyncio
-import logging
 import pickle
 from contextlib import AbstractContextManager
 from datetime import datetime, timedelta
@@ -15,17 +13,11 @@ from langgraph.checkpoint.base import (
     SerializerProtocol,
 )
 from langgraph.serde.jsonplus import JsonPlusSerializer
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing_extensions import Self
 
-logging.basicConfig(
-    filename="database/db.log",
-    encoding="utf-8",
-    filemode="a",
-    format="{asctime} - {levelname} - {message}",
-    style="{",
-    datefmt="%d-%m-%Y %H:%M",
-)
+# TODO Adjusting to the newer version of the checkpoint system. Requires langgraph 0.2.3
 
 
 class JsonPlusSerializerCompat(JsonPlusSerializer):
@@ -91,7 +83,6 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         if thread_ts:
             base_query["chats.checkpoints.thread_ts"] = thread_ts
 
-        # projection = {"chats.$": 1} if thread_ts else {"chats": 1}
         projection = {"chats": {"$elemMatch": {"chat_id": chat_id}}}
 
         try:
@@ -137,13 +128,13 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 ),
             )
         except Exception as e:
-            logging.error(f"Error in aget_tuple function: {e}")
+            logger.error(f"Error in aget_tuple function: {e}")
 
     async def alist(
         self,
         config: Optional[RunnableConfig],
         *,
-        filter: Optional[Dict[str, Any]] = None,
+        filters: Optional[Dict[str, Any]] = None,
         before: Optional[RunnableConfig] = None,
         limit: Optional[int] = None,
     ) -> AsyncIterator[CheckpointTuple]:
@@ -152,8 +143,8 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
             query["_id"] = config["configurable"]["user_id"]
             query["chats.chat_id"] = config["configurable"]["thread_id"]
 
-        if filter:
-            for key, value in filter.items():
+        if filters:
+            for key, value in filters.items():
                 query[f"chats.checkpoints.metadata.{key}"] = value
 
         if before is not None:
@@ -197,7 +188,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                     parent_config,
                 )
         except Exception as e:
-            logging.error(f"Error in alist function: {e}")
+            logger.error(f"Error in alist function: {e}")
 
     async def aput(
         self,
@@ -261,7 +252,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 }
             }
         except Exception as e:
-            logging.error(f"Error in aput function: {e}")
+            logger.error(f"Error in aput function: {e}")
 
     async def aput_writes(
         self,
@@ -296,7 +287,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 array_filters=[{"checkpoint.thread_ts": thread_ts}],
             )
         except Exception as e:
-            logging.error(f"Error in aput_writes function: {e}")
+            logger.error(f"Error in aput_writes function: {e}")
 
 
 class MongoDBUsageTracker(MongoDBBase):
@@ -316,7 +307,7 @@ class MongoDBUsageTracker(MongoDBBase):
                 upsert=True,
             )
         except Exception as e:
-            logging.error(f"Error while pushing token usage: {e}")
+            logger.error(f"Error while pushing token usage: {e}")
 
     async def get_token_usage(self, user_id: str, hours: int) -> int:
         time_period = datetime.now() - timedelta(hours=hours)
@@ -352,4 +343,4 @@ class MongoDBUsageTracker(MongoDBBase):
                     "total_tokens": 0,
                 }
         except Exception as e:
-            logging.error(f"Error while getting token usage: {e}")
+            logger.error(f"Error while getting token usage: {e}")

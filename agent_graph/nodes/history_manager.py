@@ -2,10 +2,11 @@ import asyncio
 from typing import Any
 
 from langchain_core.messages import HumanMessage, RemoveMessage
+from loguru import logger
 
 from agent_state.state import GraphState, HistoryManagementType
 from prompts.PromptController import PromptController
-from utils.utils import pretty_print_messages
+from utils.errors import AgentError
 
 
 async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
@@ -17,7 +18,10 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
         *messages,
         HumanMessage(content=summary_prompt),
     ]
-    summary = await llm_model.ainvoke(messages_to_summarize)
+    try:
+        summary = await llm_model.ainvoke(messages_to_summarize)
+    except Exception as e:
+        raise AgentError("Failed to call LLM to summarize conversation") from e
 
     return summary.content[0]["text"]
 
@@ -37,10 +41,6 @@ def clear_message_history(messages: list[Any]) -> tuple[list[Any], list[Any]]:
 def history_manager(state: GraphState) -> GraphState:
     messages = state["messages"]
     history_config = state["history_config"]
-
-    print(f"History token count: {state['history_token_count']}")
-    print("History before processing: ")
-    pretty_print_messages(state["messages"])
 
     new_messages = []
     messages_to_summarize = []
@@ -79,6 +79,7 @@ def history_manager(state: GraphState) -> GraphState:
             new_messages = messages
 
         case _:
+            logger.error(f"Invalid history type {history_config['type']}")
             raise ValueError(f"Invalid history type {history_config['type']}")
 
     if messages_to_summarize:

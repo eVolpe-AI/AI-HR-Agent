@@ -26,7 +26,11 @@
     MINT_API_URL       
     MINT_CLIENT_ID
     MINT_CLIENT_SECRET
-    ```
+
+    LOG_LEVEL
+    LOG_TO_CONSOLE
+    LOG_FILE
+    LOG_COLORING_IN_FILE
  
 
 * Run app:

@@ -1,16 +1,19 @@
 import multiprocessing
 import os
+import traceback
 
 import uvicorn
-from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
+from loguru import logger
 
-from agent_api.messages import UserMessage
+from agent_api.messages import AgentMessage, AgentMessageType, UserMessage
 from AgentMint import AgentMint
+from utils.errors import ServerError
+from utils.logging import configure_logging
 
-load_dotenv()
+configure_logging()
 
 # os.environ["LANGCHAIN_TRACING_V2"] = "true"
 # os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
@@ -37,15 +40,30 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
+        try:
+            await websocket.accept()
+            self.active_connections.append(websocket)
+            logger.debug(f"Connected with {websocket.client}")
+        except Exception as e:
+            logger.error(f"Connection failed with {websocket.client} due to {e}")
+            raise
 
     async def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        try:
+            self.active_connections.remove(websocket)
+            logger.debug(f"Connection closed with: {websocket.client}")
+        except ValueError as e:
+            logger.warning(
+                f"Attempted to disconnect with {websocket.client} that was not connected: {e}"
+            )
 
     async def send_message(self, message: str, websocket: WebSocket):
         if websocket.client_state == WebSocketState.CONNECTED:
-            await websocket.send_json(message)
+            try:
+                await websocket.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending message to {websocket.client}: {e}")
+                raise
 
 
 manager = ConnectionManager()
@@ -60,29 +78,55 @@ async def get():
 async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
     await manager.connect(websocket)
     try:
-        agent = AgentMint(user_id=user_id, chat_id=chat_id)
+        agent = AgentMint(
+            user_id=user_id, chat_id=chat_id, ip_addr=websocket.client.host
+        )
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
             message_type = user_input.to_json()["type"]
             match message_type:
                 case "input":
-                    await manager.send_message(user_input.content, websocket)
+                    logger.debug(
+                        f"Received input message: '{user_input.content}' from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
+                    )
                 case "tool_confirm":
-                    await manager.send_message("tool_confirm", websocket)
+                    logger.debug(
+                        f"Received tool confirmation from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
+                    )
                 case "tool_reject":
-                    await manager.send_message("tool_reject", websocket)
+                    logger.debug(
+                        f"Received tool rejection: {user_input.content}' from {websocket.client}, user_id: {user_id}, chat_id: {chat_id}"
+                    )
+                case _:
+                    raise ServerError(f"Invalid message type received: {message_type}")
+
             async for message in call_agent(agent, user_input):
                 await manager.send_message(message, websocket)
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
+    except ServerError as e:
+        logger.error(f"Server error: {websocket.client} {traceback.format_exc()}")
+        message = AgentMessage(type=AgentMessageType.ERROR, content=e.message).to_json()
+        await manager.send_message(message, websocket)
+        await manager.disconnect(websocket)
+        raise
+    except Exception:
+        message = AgentMessage(
+            type=AgentMessageType.ERROR, content="Internal error occurred"
+        ).to_json()
+        await manager.send_message(message, websocket)
+        await manager.disconnect(websocket)
+        raise
 
 
 @app_ws2.websocket("/ws/test/{chat_id}/")
 async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
     await manager.connect(websocket)
     try:
-        agent = AgentMint(user_id="admin", chat_id=chat_id)
+        agent = AgentMint(
+            user_id="admin", chat_id=chat_id, ip_addr=websocket.client.host
+        )
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
