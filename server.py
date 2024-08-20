@@ -1,5 +1,7 @@
+import multiprocessing
 import os
 
+import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
@@ -15,7 +17,9 @@ load_dotenv()
 # os.environ["LANGCHAIN_PROJECT"] = "tokenTest"
 
 
-app = FastAPI()
+app_http = FastAPI()
+app_ws = FastAPI()
+app_ws2 = FastAPI()
 
 
 async def call_agent(agent: AgentMint, message: str):
@@ -47,12 +51,12 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@app.get("/")
+@app_http.get("/")
 async def get():
     return FileResponse("./utils/chat.html")
 
 
-@app.websocket("/ws/{user_id}/{chat_id}")
+@app_ws.websocket("/ws/{user_id}/{chat_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
     await manager.connect(websocket)
     try:
@@ -74,7 +78,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
         await manager.disconnect(websocket)
 
 
-@app.websocket("/ws/test/{chat_id}/")
+@app_ws2.websocket("/ws/test/{chat_id}/")
 async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
     await manager.connect(websocket)
     try:
@@ -86,3 +90,23 @@ async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
                 await manager.send_message(message, websocket)
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
+
+
+# def start_app(app, host, port):
+#     uvicorn.run(app, host=host, port=port)
+
+
+# def main():
+#     http_process = multiprocessing.Process(
+#         target=start_app, args=(app_http, "0.0.0.0", 80)
+#     )
+#     ws_process = multiprocessing.Process(
+#         target=start_app, args=(app_ws, "0.0.0.0", 5288)
+#     )
+
+#     http_process.start()
+#     ws_process.start()
+
+
+# if __name__ == "__main__":
+#     main()

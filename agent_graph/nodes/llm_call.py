@@ -13,8 +13,8 @@ async def llm_call(state):
         
     messages_for_llm = [SystemMessage(content=system_prompt), *messages]
 
-    print("Messages in llm call:")
-    pretty_print_messages(messages_for_llm)
+    # print("Messages in llm call:")
+    # pretty_print_messages(messages_for_llm)
 
     model = state["model"]
     response = await model.ainvoke(messages_for_llm)
