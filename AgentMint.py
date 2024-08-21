@@ -48,8 +48,8 @@ class AgentMint:
         ).bind_tools(tools)
 
         history_config = HistoryManagement(
-            management_type=HistoryManagementType.SUMMARIZE_N_MESSAGES.value,
-            number_of_messages=5,
+            management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
+            number_of_messages=15,
             number_of_tokens=430,
         )
 
