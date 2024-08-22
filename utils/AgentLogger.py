@@ -25,7 +25,7 @@ def configure_logging():
         logger.add(sys.stdout, level=log_level)
 
 
-class Agent_logger:
+class AgentLogger:
     user_id: str
     chat_id: str
     ip_addr: str

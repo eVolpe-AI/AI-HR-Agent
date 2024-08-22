@@ -6,13 +6,13 @@ async def tool_permit(state):
     tool_name = tool_to_use["name"]
     tool_input = tool_to_use["args"]
 
-    await adispatch_custom_event(
-        "tool_accept", {"tool": tool_name, "params": tool_input}
-    )
     new_state = state.copy()
 
     if tool_name not in state["safe_tools"]:
         new_state["tool_accept"] = 0
+        await adispatch_custom_event(
+            "tool_accept", {"tool": tool_name, "params": tool_input}
+        )
     else:
         new_state["tool_accept"] = 1
 

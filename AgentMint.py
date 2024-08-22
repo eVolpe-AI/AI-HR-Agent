@@ -20,7 +20,7 @@ from agent_state.state import GraphState, HistoryManagement, HistoryManagementTy
 from chat.ChatFactory import ChatFactory
 from database.db_utils import MongoDBUsageTracker
 from tools.ToolController import ToolController
-from utils.logging import Agent_logger
+from utils.AgentLogger import AgentLogger
 from utils.mock_streaming import stream_lorem_ipsum
 
 load_dotenv()
@@ -116,7 +116,7 @@ class AgentMint:
 
     async def invoke(self, message: UserMessage):
         await self.get_prev_state()
-        agent_logger = Agent_logger(self.user_id, self.chat_id, self.ip_addr)
+        agent_logger = AgentLogger(self.user_id, self.chat_id, self.ip_addr)
         agent_logger.start(self.state)
 
         try:
