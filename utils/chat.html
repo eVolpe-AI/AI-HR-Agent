@@ -225,6 +225,10 @@
                     <label for="connection_id">Chat ID:</label>
                     <input type="text" id="connection_id" value="1">
                 </div>
+                <div>
+                    <label for="advanced">Advanced user:</label>
+                    <input type="checkbox" id="advanced" name="advanced" value="True">
+                </div>
             </div>
             <div class="button-box">
                 <button id="connect" class="connect">Connect</button>
@@ -259,8 +263,8 @@
         function connectWebSocket() {
             var chat_id = document.querySelector("#connection_id").value;
             var username = document.querySelector("#username").value;
-            ws = new WebSocket(`ws://baka83-8.int2.evolpe.net:5288/ws/${username}/${chat_id}`);
-            //ws = new WebSocket(`ws://localhost:5288/ws/${username}/${chat_id}`);
+            var advanced = document.querySelector("#advanced").checked;
+            ws = new WebSocket(`ws://localhost:5288/ws/${username}/${chat_id}?advanced=${advanced}`);
 
             ws.onmessage = function(event) {
                 var chatMessages = document.getElementById('chatMessages');
@@ -303,6 +307,9 @@
                     messageElement.classList.add('chat-message', 'ai-debug');
                     messageElement.textContent = event.data;
                     chatMessages.appendChild(messageElement);
+                    if (message.type == "llm_end") {
+                        lastAIMessageElement = null;
+                    }
                 } else {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'user-message');

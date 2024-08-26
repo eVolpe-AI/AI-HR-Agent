@@ -1,9 +1,7 @@
-import multiprocessing
 import os
 import traceback
 
-import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 from loguru import logger
@@ -17,7 +15,7 @@ configure_logging()
 
 # os.environ["LANGCHAIN_TRACING_V2"] = "true"
 # os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-# os.environ["LANGCHAIN_PROJECT"] = "tokenTest"
+# os.environ["LANGCHAIN_PROJECT"] = "new-llm-interaction"
 
 
 app_http = FastAPI()
@@ -75,11 +73,16 @@ async def get():
 
 
 @app_ws.websocket("/ws/{user_id}/{chat_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str, chat_id: int):
+async def websocket_endpoint(
+    websocket: WebSocket, user_id: str, chat_id: int, advanced: bool = Query(False)
+):
     await manager.connect(websocket)
     try:
         agent = AgentMint(
-            user_id=user_id, chat_id=chat_id, ip_addr=websocket.client.host
+            user_id=user_id,
+            chat_id=chat_id,
+            ip_addr=websocket.client.host,
+            is_advanced=advanced,
         )
         while True:
             incoming_message = await websocket.receive_json()
@@ -125,7 +128,10 @@ async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
     await manager.connect(websocket)
     try:
         agent = AgentMint(
-            user_id="admin", chat_id=chat_id, ip_addr=websocket.client.host
+            user_id="admin",
+            chat_id=chat_id,
+            ip_addr=websocket.client.host,
+            is_advanced=True,
         )
         while True:
             incoming_message = await websocket.receive_json()
@@ -134,23 +140,3 @@ async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
                 await manager.send_message(message, websocket)
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
-
-
-# def start_app(app, host, port):
-#     uvicorn.run(app, host=host, port=port)
-
-
-# def main():
-#     http_process = multiprocessing.Process(
-#         target=start_app, args=(app_http, "0.0.0.0", 80)
-#     )
-#     ws_process = multiprocessing.Process(
-#         target=start_app, args=(app_ws, "0.0.0.0", 5288)
-#     )
-
-#     http_process.start()
-#     ws_process.start()
-
-
-# if __name__ == "__main__":
-#     main()

@@ -1,10 +1,14 @@
 import datetime
+from typing import Optional
 
-from loguru import logger
 
-
+# TODO Add hiding information about using tools and steps the Agent will take. Doesn't work reliably at the moment.
 class PromptController:
-    simple: str = "Odpowiadaj po polsku."
+    simple: str = (
+        # "Answer only in polish. Don't inform the user about using any tools. Don't inform the user about steps you are taking or will take."
+        "Answer only in polish."
+    )
+
     default: str = """
         Today is {today}.
         User you are talking to is a user of MintHCM with username {username}.
@@ -31,17 +35,15 @@ class PromptController:
         return PromptController.default.format(username=username, today=today)
 
     @staticmethod
-    def get_summary_prompt(prev_summary):
+    def get_summary_prompt(prev_summary: Optional[str]) -> str:
         if prev_summary is not None:
-            # logger.debug("Creating conversation summary based on previous summary")
             return f"""
-                To jest obecne podsumowanie konwersacji: {prev_summary}. 
-                Utwórz na jego podstawie oraz wiadomości dostępnych w historii nowe krótkie podsumowanie. 
-                Napisz to w formie ciągłego teskstu i nie dodawaj żadnego wstępu.
-                Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja.
+                This is the current conversation summary: {prev_summary}.
+                Based on this and the messages available in the history, create a new brief summary.
+                Write it in the form of continuous text and do not add any introduction.
+                Skip describing the request for the summary; it's not important information.
             """
-        # logger.debug("Creating new conversation summary")
         return """
-            Utwórz krótkie podsumowanie powyższej konwersacji. Pomiń opisanie prośby o podsumowanie, to nie jest istotna informacja. Napisz tylko podsumowanie w formie ciągłego tekstu. 
-            Nie dodawaj żadnego wstępu w stylu 'To jest obecne podsumowanie konwersacji:'.
+            Create a brief summary of the above conversation. Skip describing the request for the summary; it's not important information. Write only the summary in the form of continuous text.
+            Do not add any introduction like 'This is the current conversation summary:'.
         """

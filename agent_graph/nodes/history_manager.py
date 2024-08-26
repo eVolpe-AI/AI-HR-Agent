@@ -5,12 +5,14 @@ from langchain_core.messages import HumanMessage, RemoveMessage
 from loguru import logger
 
 from agent_state.state import GraphState, HistoryManagementType
+from chat.ChatFactory import ChatFactory
 from prompts.PromptController import PromptController
 from utils.errors import AgentError
 
 
 async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
-    llm_model = state["model"]
+    model = state["model_name"]
+    provider = state["provider"]
     prev_summary = state["conversation_summary"]
 
     summary_prompt = PromptController.get_summary_prompt(prev_summary)
@@ -19,11 +21,16 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
         HumanMessage(content=summary_prompt),
     ]
     try:
-        summary = await llm_model.ainvoke(messages_to_summarize)
+        llm_model = ChatFactory.get_model_controller(provider, model)
+        summary = llm_model.get_summary(messages_to_summarize)
     except Exception as e:
         raise AgentError("Failed to call LLM to summarize conversation") from e
 
-    return summary.content[0]["text"]
+    if isinstance(summary.content, str):
+        print(f"Summary content: {summary.content}")
+        return summary.content
+    else:
+        return summary.content[-1]["text"]
 
 
 def clear_message_history(messages: list[Any]) -> tuple[list[Any], list[Any]]:

@@ -60,22 +60,22 @@ class ToolController:
     }
 
     default_tools = [
-        # "MintGetModuleNamesTool",
-        # "MintGetModuleFieldsTool",
-        # "MintSearchTool",
-        # "MintCreateRecordTool",
-        # "MintCreateMeetingTool",
-        # "MintGetUsersTool",
-        # "UpdateFieldsTool",
-        # "MintCreateRelTool",
-        # "MintDeleteRecordTool",
-        # "MintDeleteRelTool",
-        # "MintGetRelTool",
+        "MintGetModuleNamesTool",
+        "MintGetModuleFieldsTool",
+        "MintSearchTool",
+        "MintCreateRecordTool",
+        "MintCreateMeetingTool",
+        "MintGetUsersTool",
+        "UpdateFieldsTool",
+        "MintCreateRelTool",
+        "MintDeleteRecordTool",
+        "MintDeleteRelTool",
+        "MintGetRelTool",
         "CalendarTool",
     ]
 
     safe_tools = [
-        # "CalendarTool",
+        "CalendarTool",
     ]
 
     @staticmethod
@@ -89,3 +89,9 @@ class ToolController:
     @staticmethod
     def get_safe_tools():
         return ToolController.safe_tools
+
+    @staticmethod
+    def get_tools():
+        available_tools = ToolController.get_available_tools()
+        default_tools = ToolController.get_default_tools()
+        return [available_tools[tool] for tool in default_tools]

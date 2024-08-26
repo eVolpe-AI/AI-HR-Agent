@@ -1,29 +1,35 @@
-from typing import Text, Dict, List
 from abc import ABC, abstractmethod
-from TimeLogger import TimeLogger
+from typing import Optional
+
+from langchain_core.messages import AIMessage
+
 
 class BaseController(ABC):
-    """ Class to control conversation """
-
-    default_base_url = None
-    default_model = None
-    default_api_key = None
-    default_temperature = 0.1
-    client = None
-    temperature = None
-    model = None
-    base_url = None
-    api_key = None
-    timelogger = TimeLogger()
-
-    def __init__(self, model_name, url, api_key, temperature):
-        self.base_url = url or self.default_base_url # Server URL
-        self.model = model_name or self.default_model # Model name
-        self.temperature = temperature or self.default_temperature # Temperature
-        self.api_key = api_key or self.default_api_key  # API KEY
+    """Abstract base class for controlling conversation models"""
 
     @abstractmethod
-    def getClient(self) :
+    async def get_output(self, messages) -> AIMessage:
         """
-        This class is an abstract class that is used to define the interface for the OpenAI API controllers.
-        The class has methods"""
+        Get the output from the model for the given messages.
+
+        Args:
+            messages (list): A list of messages to send to the model.
+
+        Returns:
+            AIMessage: The response from the model.
+        """
+        raise NotImplementedError
+
+    # TODO async version causes asyncio error
+    @abstractmethod
+    def get_summary(self, messages) -> AIMessage:
+        """
+        Get a summary of the given messages from the model.
+
+        Args:
+            messages (list): A list of messages to summarize.
+
+        Returns:
+            AIMessage: The summary response from the model.
+        """
+        raise NotImplementedError

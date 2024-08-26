@@ -99,21 +99,25 @@ class GraphState(TypedDict):
     safe_tools: list[str]
     tool_accept: bool
     user: str
-    model: Any
+    provider: str
+    model_name: str
     history_config: HistoryManagement
     conversation_summary: str
     system_prompt: str
     history_token_count: int
+    tools: list[Any]
 
     def __init__(
         self,
         messages,
         safe_tools: list,
         user: str,
-        model: Any,
+        provider: str,
+        model_name: str,
         tool_accept: bool,
         history_config: HistoryManagement,
         system_prompt: str,
+        tools: list[Any],
         history_token_count: int,
         conversation_summary: str = None,
     ):
@@ -121,8 +125,10 @@ class GraphState(TypedDict):
         self.safe_tools = safe_tools
         self.tool_accept = tool_accept
         self.user = user
-        self.model = model
+        self.provider = provider
+        self.model_name = model_name
         self.history_config = history_config
         self.conversation_summary = conversation_summary
         self.system_prompt = system_prompt
         self.history_token_count = history_token_count
+        self.tools = tools

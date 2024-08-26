@@ -55,12 +55,22 @@ class Agent_logger:
         self.end_state = self._format_state(state)
         self.end_time = time.time_ns()
         self._save_log()
+        self.clear()
 
     def end_error(self, state: GraphState, error: Exception) -> None:
         self.end_state = self._format_state(state)
         self.end_time = time.time_ns()
         self.error = error
         self._save_log(error=True)
+        self.clear()
+
+    def clear(self) -> None:
+        self.start_time = 0
+        self.end_time = 0
+        self.start_state = None
+        self.end_state = None
+        self.error = None
+        self.usage_data = None
 
     def set_usage_data(self, usage_data: dict) -> None:
         self.usage_data = usage_data
@@ -121,7 +131,7 @@ class Agent_logger:
         usage_data_string = self._format_usage_data()
         log_string = f"""
                     user: {state["user"]}
-                    llm model name: {state["model"].bound.model}
+                    llm model name: {state["model_name"]}
                     safe_tools: {state["safe_tools"]}
                     tool_accept: {state["tool_accept"]}
                     history_config: {history_config_string}
@@ -130,5 +140,4 @@ class Agent_logger:
                     history_token_count: {state["history_token_count"]}<magenta>
                     messages: {messages_string}</magenta>
                     usage_data: {usage_data_string}"""
-
         return log_string
