@@ -18,7 +18,7 @@ from agent_state.state import GraphState, HistoryManagement, HistoryManagementTy
 from chat.ChatFactory import ProviderConfig
 from database.db_utils import MongoDBUsageTracker
 from tools.ToolController import ToolController
-from utils.logging import Agent_logger
+from utils.AgentLogger import AgentLogger
 from utils.mock_streaming import stream_lorem_ipsum
 
 load_dotenv()
@@ -53,13 +53,13 @@ class AgentMint:
             }
         }
 
-        self.agent_logger = Agent_logger(self.user_id, self.chat_id, self.ip_addr)
+        self.agent_logger = AgentLogger(self.user_id, self.chat_id, self.ip_addr)
 
 
     async def set_state(self) -> None:
         try:
             prev_state = await self.app.aget_state(self.config)
-            return GraphState(
+            self.state = GraphState(
                 messages=prev_state.values["messages"],
                 user=self.user_id,
                 provider="ANTHROPIC",
@@ -105,7 +105,7 @@ class AgentMint:
 
 
     async def invoke(self, message: UserMessage):
-        self.state = await self.set_state()
+        await self.set_state()
         self.agent_logger.start(self.state)
 
         try:
@@ -124,7 +124,7 @@ class AgentMint:
             self.agent_logger.end_error(self.state, e)
             raise 
         
-        self.state = await self.set_state()
+        await self.set_state()
         self.agent_logger.end(self.state)
 
 

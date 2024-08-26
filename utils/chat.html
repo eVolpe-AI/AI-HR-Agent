@@ -170,13 +170,13 @@
             margin: 5px;
         }
 
-        .input-box label {
+        .input-box label, .token_box label {
             margin-right: 5px;
             color: #07111D;
             font-weight: bold;
         }
 
-        .input-box input {
+        .input-box input, .token_box input {
             padding: 5px;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -211,6 +211,18 @@
         button:disabled:hover {
             background-color: #c9c8c8
         }
+
+        .token_box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+        }
+
+        .token_box input {
+            width: 60%;
+        }
+        
     </style>
 </head>
 <body>
@@ -229,6 +241,10 @@
                     <label for="advanced">Advanced user:</label>
                     <input type="checkbox" id="advanced" name="advanced" value="True">
                 </div>
+            </div>
+            <div class="token_box">
+                <label for="connection_id">Authentication token</label>
+                <input type="text" id="token">
             </div>
             <div class="button-box">
                 <button id="connect" class="connect">Connect</button>
@@ -264,12 +280,15 @@
             var chat_id = document.querySelector("#connection_id").value;
             var username = document.querySelector("#username").value;
             var advanced = document.querySelector("#advanced").checked;
-            ws = new WebSocket(`ws://localhost:5288/ws/${username}/${chat_id}?advanced=${advanced}`);
+            var token = document.querySelector("#token").value;
+
+            //ws = new WebSocket(`wss://baka83-8.int2.evolpe.net/${username}/${chat_id}/${token}?advanced=${advanced}`);
+            ws = new WebSocket(`ws://localhost:5288/${username}/${chat_id}/${token}?advanced=${advanced}`);
 
             ws.onmessage = function(event) {
                 var chatMessages = document.getElementById('chatMessages');
                 var message = JSON.parse(event.data);
-                
+                console.log(message);
                 if (message.type === "llm_text") {
                     if (lastAIMessageElement) {
                         lastAIMessageElement.innerHTML += message.content;

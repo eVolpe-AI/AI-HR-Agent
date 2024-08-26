@@ -6,10 +6,11 @@ from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 from loguru import logger
 
+from agent_api.CredentialManager import CredentialManager
 from agent_api.messages import AgentMessage, AgentMessageType, UserMessage
 from AgentMint import AgentMint
+from utils.AgentLogger import configure_logging
 from utils.errors import ServerError
-from utils.logging import configure_logging
 
 configure_logging()
 
@@ -21,6 +22,7 @@ configure_logging()
 app_http = FastAPI()
 app_ws = FastAPI()
 app_ws2 = FastAPI()
+credential_manager = CredentialManager()
 
 
 async def call_agent(agent: AgentMint, message: str):
@@ -37,11 +39,22 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, user_id: str, token: str):
+        if not credential_manager.authenticate_user(user_id, token):
+            logger.warning(f"Failed to authenticate {websocket.client}")
+            await websocket.accept()
+            await websocket.send_json(
+                AgentMessage(
+                    type=AgentMessageType.ERROR, content="Authentication failed"
+                ).to_json()
+            )
+            await websocket.close()
+            return False
         try:
             await websocket.accept()
             self.active_connections.append(websocket)
             logger.debug(f"Connected with {websocket.client}")
+            return True
         except Exception as e:
             logger.error(f"Connection failed with {websocket.client} due to {e}")
             raise
@@ -72,11 +85,17 @@ async def get():
     return FileResponse("./utils/chat.html")
 
 
-@app_ws.websocket("/ws/{user_id}/{chat_id}")
+@app_ws.websocket("/{user_id}/{chat_id}/{token}")
 async def websocket_endpoint(
-    websocket: WebSocket, user_id: str, chat_id: int, advanced: bool = Query(False)
+    websocket: WebSocket,
+    user_id: str,
+    chat_id: int,
+    token: str,
+    advanced: bool = Query(False),
 ):
-    await manager.connect(websocket)
+    connected = await manager.connect(websocket, user_id, token)
+    if not connected:
+        return
     try:
         agent = AgentMint(
             user_id=user_id,
@@ -123,20 +142,20 @@ async def websocket_endpoint(
         raise
 
 
-@app_ws2.websocket("/ws/test/{chat_id}/")
-async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
-    await manager.connect(websocket)
-    try:
-        agent = AgentMint(
-            user_id="admin",
-            chat_id=chat_id,
-            ip_addr=websocket.client.host,
-            is_advanced=True,
-        )
-        while True:
-            incoming_message = await websocket.receive_json()
-            user_input = UserMessage(incoming_message)
-            async for message in mock_call_agent(agent, user_input):
-                await manager.send_message(message, websocket)
-    except WebSocketDisconnect:
-        await manager.disconnect(websocket)
+# @app_ws2.websocket("/ws/test/{chat_id}/")
+# async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
+#     await manager.connect(websocket)
+#     try:
+#         agent = AgentMint(
+#             user_id="admin",
+#             chat_id=chat_id,
+#             ip_addr=websocket.client.host,
+#             is_advanced=True,
+#         )
+#         while True:
+#             incoming_message = await websocket.receive_json()
+#             user_input = UserMessage(incoming_message)
+#             async for message in mock_call_agent(agent, user_input):
+#                 await manager.send_message(message, websocket)
+#     except WebSocketDisconnect:
+#         await manager.disconnect(websocket)
