@@ -1,7 +1,7 @@
 # mint_agent_demo
 
 ## Graph structure
-<img src="./graph_schema.png" alt="graph image" width="300"/>
+<img src="./utils/graph_schema.png" alt="graph image" width="350"/>
 
 ## Installation
 

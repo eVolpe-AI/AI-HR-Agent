@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import AsyncGenerator
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, ToolMessage
@@ -23,6 +24,9 @@ load_dotenv()
 
 
 class AgentMint:
+    """
+    The main agent class that handles the agent's workflow and interactions with the user.
+    """
 
     def __init__(self, user_id: str, chat_id: str, ip_addr: str, is_advanced: bool) -> None:
         tools = ToolController.get_tools()
@@ -56,15 +60,16 @@ class AgentMint:
 
 
     async def set_state(self) -> None:
+        """
+        Set the agent's state based on the previous state stored in the database.
+        """
         try:
             prev_state = await self.app.aget_state(self.config)
             self.state = GraphState(
                 messages=prev_state.values["messages"],
                 user=self.user_id,
-                provider="ANTHROPIC",
-                model_name="claude-3-haiku-20240307",
-                # provider="OPENAI",
-                # model_name="gpt-4o-mini-2024-07-18",
+                provider=os.environ.get("LLM_PROVIDER", "ANTHROPIC"),
+                model_name=os.environ.get("LLM_MODEL", "claude-3-haiku-20240307"),
                 tools=ToolController.get_default_tools(),
                 safe_tools=ToolController.get_safe_tools(),
                 tool_accept=prev_state.values.get("tool_accept", False),
@@ -81,10 +86,25 @@ class AgentMint:
 
 
     def visualize_graph(self) -> None:
-        self.app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
+        """
+        Visualize the agent's graph schema and save it as a PNG file.
+        """
+        self.app.get_graph().draw_mermaid_png(output_file_path="utils/graph_schema.png")
 
 
-    async def invoke(self, message: UserMessage):
+    async def invoke(self, message: UserMessage) -> AsyncGenerator[str, None]:
+        """
+        Invoke the agent with the given user message.
+
+        Args:
+            message (UserMessage): The message object containing the type and content of the user's message.
+
+        Yields:
+            str: The JSON representation of the agent message to be sent to the user.
+        
+        Raises:
+            Exception: If an error occurs during the agent's execution
+        """
         await self.set_state()
         self.agent_logger.start(self.state)
 

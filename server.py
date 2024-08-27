@@ -1,5 +1,6 @@
 import os
 import traceback
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
@@ -23,16 +24,43 @@ app_ws = FastAPI()
 credential_manager = CredentialManager()
 
 
-async def call_agent(agent: AgentMint, message: str):
+async def call_agent(
+    agent: AgentMint, message: str
+) -> AsyncGenerator[AgentMessage, None]:
+    """
+    Calls the agent with the given message and yields the response
+
+    Args:
+        agent: AgentMint object
+        message: UserMessage object
+
+    Yields:
+        AgentMessage object
+    """
     async for message in agent.invoke(message):
         yield message
 
 
 class ConnectionManager:
+    """
+    Manages active connections with the agent.
+    """
+
     def __init__(self):
         self.active_connections: list[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket, user_id: str, token: str):
+    async def connect(self, websocket: WebSocket, user_id: str, token: str) -> bool:
+        """
+        Authenticates the user and establishes a connection with the agent.
+
+        Args:
+            websocket: WebSocket object
+            user_id: str
+            token: str
+
+        Returns:
+            bool: True if the connection is established, False otherwise
+        """
         if not credential_manager.authenticate_user(user_id, token):
             logger.warning(f"Failed to authenticate {websocket.client}")
             await websocket.accept()
@@ -50,9 +78,12 @@ class ConnectionManager:
             return True
         except Exception as e:
             logger.error(f"Connection failed with {websocket.client} due to {e}")
-            raise
+            return False
 
-    async def disconnect(self, websocket: WebSocket):
+    async def disconnect(self, websocket: WebSocket) -> None:
+        """
+        Disconnects the user from the agent API.
+        """
         try:
             self.active_connections.remove(websocket)
             logger.debug(f"Connection closed with: {websocket.client}")
@@ -61,7 +92,10 @@ class ConnectionManager:
                 f"Attempted to disconnect with {websocket.client} that was not connected: {e}"
             )
 
-    async def send_message(self, message: str, websocket: WebSocket):
+    async def send_message(self, message: str, websocket: WebSocket) -> None:
+        """
+        Sends a message to the connected socket.
+        """
         if websocket.client_state == WebSocketState.CONNECTED:
             try:
                 await websocket.send_json(message)
@@ -75,6 +109,9 @@ manager = ConnectionManager()
 
 @app_http.get("/")
 async def get():
+    """
+    Server endpoint for the test chat page.
+    """
     return FileResponse("./utils/chat.html")
 
 
@@ -86,6 +123,19 @@ async def websocket_endpoint(
     token: str,
     advanced: bool = Query(False),
 ):
+    """
+    Server endpoint for the WebSocket connection.
+
+    Args:
+        websocket: WebSocket object
+        user_id: str
+        chat_id: str
+        token: str
+        advanced: bool
+
+    Raises:
+        ServerError: If an error occurs during the conversation
+    """
     connected = await manager.connect(websocket, user_id, token)
     if not connected:
         return
@@ -96,6 +146,7 @@ async def websocket_endpoint(
             ip_addr=websocket.client.host,
             is_advanced=advanced,
         )
+        agent.visualize_graph()
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)
