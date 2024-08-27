@@ -282,7 +282,7 @@
             var advanced = document.querySelector("#advanced").checked;
             var token = document.querySelector("#token").value;
 
-            //ws = new WebSocket(`wss://baka83-8.int2.evolpe.net/${username}/${chat_id}/${token}?advanced=${advanced}`);
+            //ws = new WebSocket(`wss://baka83-8.evolpe.net/${username}/${chat_id}/${token}?advanced=${advanced}`);
             ws = new WebSocket(`ws://localhost:5288/${username}/${chat_id}/${token}?advanced=${advanced}`);
 
             ws.onmessage = function(event) {

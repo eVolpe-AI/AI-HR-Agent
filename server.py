@@ -18,20 +18,13 @@ configure_logging()
 # os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 # os.environ["LANGCHAIN_PROJECT"] = "new-llm-interaction"
 
-
 app_http = FastAPI()
 app_ws = FastAPI()
-app_ws2 = FastAPI()
 credential_manager = CredentialManager()
 
 
 async def call_agent(agent: AgentMint, message: str):
     async for message in agent.invoke(message):
-        yield message
-
-
-async def mock_call_agent(agent: AgentMint, message: str):
-    async for message in agent.mock_invoke(message):
         yield message
 
 
@@ -89,7 +82,7 @@ async def get():
 async def websocket_endpoint(
     websocket: WebSocket,
     user_id: str,
-    chat_id: int,
+    chat_id: str,
     token: str,
     advanced: bool = Query(False),
 ):
@@ -140,22 +133,3 @@ async def websocket_endpoint(
         await manager.send_message(message, websocket)
         await manager.disconnect(websocket)
         raise
-
-
-# @app_ws2.websocket("/ws/test/{chat_id}/")
-# async def websocket_test_endpoint(websocket: WebSocket, chat_id: int):
-#     await manager.connect(websocket)
-#     try:
-#         agent = AgentMint(
-#             user_id="admin",
-#             chat_id=chat_id,
-#             ip_addr=websocket.client.host,
-#             is_advanced=True,
-#         )
-#         while True:
-#             incoming_message = await websocket.receive_json()
-#             user_input = UserMessage(incoming_message)
-#             async for message in mock_call_agent(agent, user_input):
-#                 await manager.send_message(message, websocket)
-#     except WebSocketDisconnect:
-#         await manager.disconnect(websocket)

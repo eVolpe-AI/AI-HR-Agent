@@ -25,7 +25,6 @@ class CalendarTool(BaseTool):
         self, format: str, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
         """Use the tool."""
-        print("Calling CalendarTool._run()" + date.today().strftime("%Y-%m-%d (%A)"))
         return date.today().strftime("%Y-%m-%d (%A)")
 
     # async def _arun(

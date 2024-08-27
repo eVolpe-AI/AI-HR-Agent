@@ -1,19 +1,19 @@
 # mint_agent_demo
 
 ## Graph structure
-![ALT TEXT](./graph_schema.png)
+<img src="./graph_schema.png" alt="graph image" width="300"/>
 
-## Getting started
+## Installation
 
-* Set up envrinment with python ( Tested on: 3.12.4)
+1. Set up envrinment with python ( Tested on: 3.12.5)
 
-* Prepare mongoDB database server
+2. Prepare mongoDB database
 
-* Run on envrionment required installs:
+3. Run on envrionment required installs:
+    ```sh
+    pip install -r requirements.txt
     ```
-    pip install -r requirements.txt -U
-    ```
-* copy .env_example as .env and fill in required fields
+4. Copy .env_example as .env and fill in required fields
 
     required fileds for now:
     ```
@@ -23,18 +23,72 @@
     MONGO_URI
     DB_NAME
 
-    MINT_API_URL       
-    MINT_CLIENT_ID
-    MINT_CLIENT_SECRET
+    MINT_API_URL
 
     LOG_LEVEL
     LOG_TO_CONSOLE
     LOG_FILE
     LOG_COLORING_IN_FILE
- 
-
-* Run app:
-
     ```
-    fastapi dev server.py
-    ```
+
+5. Prepare database structure:
+    1. Copy credentials.json_example as credentials.json and fill in required fields.
+    
+        Example:
+        ```json
+            [
+              {
+                "_id": "admin",
+                "auth_token": "test_token_123",
+                "user_credentials": [
+                  {
+                    "system": "MintHCM",
+                    "credential_type": "APIV8",
+                    "credentials": {
+                      "client_id": "test_id",
+                      "secret": "test_secret"
+                    }
+                  }
+                ]
+              }
+            ]
+        ```
+    2. Run script to populate database:
+        ```sh
+        python utils/generate_credentials.py
+        ```
+
+## Running the App:
+
+1. Run the app: 
+    * Test chat widget:
+        ```sh
+        uvicorn server:app_http --host=0.0.0.0 --port=80
+        ```
+    * Agent API:
+        ```sh
+        uvicorn server:app_ws --host=0.0.0.0 --port=5288
+        ```
+
+2. Use test chat widget on `localhost:80` or connect to websocket: `ws://localhost:5288/<user_id>/<chat_id>/<token>?advanced=<advanced>` where:
+    * **`user_id`**: User ID
+    * **`chat_id`**: The ID of a chat, responsible for maintaining conversation history
+    * **`token`**: User authentication token
+    * **`advanced`**:
+        * **true** -> sends information about using all tools
+        * **false** -> hides information about using safe tools
+    
+    * *Usage example in python*
+        ```python
+        import websockets
+        import asyncio
+
+        async def connect():
+            uri = "ws://localhost:5288/admin/new_chat_1/test_token_123?advanced=false"
+            async with websockets.connect(uri) as websocket:
+                await websocket.send("Hello, World!")
+                response = await websocket.recv()
+                print(response)
+
+        asyncio.run(connect())
+        ```

@@ -1,4 +1,3 @@
-import asyncio
 import os
 from datetime import datetime
 
@@ -19,12 +18,12 @@ from chat.ChatFactory import ProviderConfig
 from database.db_utils import MongoDBUsageTracker
 from tools.ToolController import ToolController
 from utils.AgentLogger import AgentLogger
-from utils.mock_streaming import stream_lorem_ipsum
 
 load_dotenv()
 
 
 class AgentMint:
+
     def __init__(self, user_id: str, chat_id: str, ip_addr: str, is_advanced: bool) -> None:
         tools = ToolController.get_tools()
         self.state = None
@@ -83,25 +82,6 @@ class AgentMint:
 
     def visualize_graph(self) -> None:
         self.app.get_graph().draw_mermaid_png(output_file_path="graph_schema.png")
-
-
-    async def mock_invoke(self, message: UserMessage):
-        yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
-        yield AgentMessage(type=AgentMessageType.LLM_START).to_json()
-        await asyncio.sleep(1)
-
-        for chunk in stream_lorem_ipsum():
-            yield AgentMessage(type=AgentMessageType.LLM_TEXT, content=chunk).to_json()
-
-        yield AgentMessage(type=AgentMessageType.LLM_END).to_json()
-
-        yield AgentMessage(
-            type=AgentMessageType.TOOL_START, tool_name="tool1", tool_input="test input"
-        ).to_json()
-        await asyncio.sleep(4)
-        yield AgentMessage(type=AgentMessageType.TOOL_END).to_json()
-
-        yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
 
 
     async def invoke(self, message: UserMessage):
