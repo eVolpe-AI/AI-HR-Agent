@@ -2,26 +2,25 @@ import pickle
 from contextlib import AbstractContextManager
 from datetime import datetime, timedelta
 from types import TracebackType
-from typing import Any, AsyncIterator, Dict, Optional, Sequence, Tuple
+from typing import AsyncIterator, Optional, Sequence
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import (
     BaseCheckpointSaver,
+    ChannelVersions,
     Checkpoint,
     CheckpointMetadata,
     CheckpointTuple,
     SerializerProtocol,
 )
-from langgraph.serde.jsonplus import JsonPlusSerializer
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing_extensions import Self
 
-# TODO Adjusting to the newer version of the checkpoint system. Requires langgraph 0.2.3
-
 
 class JsonPlusSerializerCompat(JsonPlusSerializer):
-    def loads(self, data: bytes) -> Any:
+    def loads(self, data: bytes) -> any:
         if data.startswith(b"\x80") and data.endswith(b"."):
             return pickle.loads(data)
         return super().loads(data)
@@ -75,13 +74,13 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
 
     async def aget_tuple(self, config: RunnableConfig) -> Optional[CheckpointTuple]:
         user_id = config["configurable"]["user_id"]
-        chat_id = config["configurable"]["thread_id"]
-        thread_ts = config["configurable"].get("thread_ts")
+        chat_id = config["configurable"]["chat_id"]
+        checkpoint_id = config["configurable"].get("checkpoint_id")
 
         base_query = {"_id": user_id, "chats.chat_id": chat_id}
 
-        if thread_ts:
-            base_query["chats.checkpoints.thread_ts"] = thread_ts
+        if checkpoint_id:
+            base_query["chats.checkpoints.checkpoint_id"] = checkpoint_id
 
         projection = {"chats": {"$elemMatch": {"chat_id": chat_id}}}
 
@@ -93,13 +92,17 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
 
             chat = result["chats"][0]
 
-            if not thread_ts:
+            if not checkpoint_id:
                 last_checkpoint = (
                     chat["checkpoints"][-1] if chat.get("checkpoints") else None
                 )
             else:
                 last_checkpoint = next(
-                    (cp for cp in chat["checkpoints"] if cp["thread_ts"] == thread_ts),
+                    (
+                        cp
+                        for cp in chat["checkpoints"]
+                        if cp["checkpoint_id"] == checkpoint_id
+                    ),
                     None,
                 )
 
@@ -109,8 +112,8 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
             return CheckpointTuple(
                 {
                     "configurable": {
-                        "thread_id": chat_id,
-                        "thread_ts": last_checkpoint["thread_ts"],
+                        "chat_id": chat_id,
+                        "checkpoint_id": last_checkpoint["checkpoint_id"],
                         "user_id": user_id,
                     }
                 },
@@ -119,11 +122,11 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 (
                     {
                         "configurable": {
-                            "thread_id": chat_id,
-                            "thread_ts": last_checkpoint["parent_ts"],
+                            "chat_id": chat_id,
+                            "checkpoint_id": last_checkpoint["parent_checkpoint_id"],
                         }
                     }
-                    if last_checkpoint.get("parent_ts")
+                    if last_checkpoint.get("parent_checkpoint_id")
                     else None
                 ),
             )
@@ -134,22 +137,22 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         self,
         config: Optional[RunnableConfig],
         *,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, any]] = None,
         before: Optional[RunnableConfig] = None,
         limit: Optional[int] = None,
     ) -> AsyncIterator[CheckpointTuple]:
         query = {}
         if config is not None:
             query["_id"] = config["configurable"]["user_id"]
-            query["chats.chat_id"] = config["configurable"]["thread_id"]
+            query["chats.chat_id"] = config["configurable"]["chat_id"]
 
         if filters:
             for key, value in filters.items():
                 query[f"chats.checkpoints.metadata.{key}"] = value
 
         if before is not None:
-            query["chats.checkpoints.thread_ts"] = {
-                "$lt": before["configurable"]["thread_ts"]
+            query["chats.checkpoints.checkpoint_id"] = {
+                "$lt": before["configurable"]["checkpoint_id"]
             }
 
         pipeline = [
@@ -157,7 +160,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
             {"$unwind": "$chats"},
             {"$unwind": "$chats.checkpoints"},
             {"$match": query},
-            {"$sort": {"chats.checkpoints.thread_ts": -1}},
+            {"$sort": {"chats.checkpoints.checkpoint_id": -1}},
         ]
 
         if limit is not None:
@@ -168,19 +171,19 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 checkpoint = doc["chats"]["checkpoints"]
 
                 parent_config = None
-                if "parent_ts" in checkpoint:
+                if "parent_checkpoint_id" in checkpoint:
                     parent_config = {
                         "configurable": {
-                            "thread_id": doc["chats"]["chat_id"],
-                            "thread_ts": checkpoint["parent_ts"],
+                            "chat_id": doc["chats"]["chat_id"],
+                            "checkpoint_id": checkpoint["parent_checkpoint_id"],
                         }
                     }
 
                 yield CheckpointTuple(
                     {
                         "configurable": {
-                            "thread_id": doc["chats"]["chat_id"],
-                            "thread_ts": checkpoint["thread_ts"],
+                            "chat_id": doc["chats"]["chat_id"],
+                            "checkpoint_id": checkpoint["checkpoint_id"],
                         }
                     },
                     self.serde.loads(checkpoint["checkpoint"]),
@@ -190,34 +193,35 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         except Exception as e:
             logger.error(f"Error in alist function: {e}")
 
+    # TODO: Check if async implementation is needed for this function
     async def aput(
         self,
         config: RunnableConfig,
         checkpoint: Checkpoint,
         metadata: CheckpointMetadata,
+        new_versions: ChannelVersions,
     ) -> RunnableConfig:
         user_id = config["configurable"]["user_id"]
-        chat_id = config["configurable"]["thread_id"]
-        thread_ts = config["configurable"].get("thread_ts")
+        chat_id = config["configurable"]["chat_id"]
+        checkpoint_id = config["configurable"].get("checkpoint_id")
 
         checkpoint_data = {
-            "thread_id": chat_id,
-            "thread_ts": checkpoint["id"],
+            "checkpoint_id": checkpoint["id"],
             "checkpoint": self.serde.dumps(checkpoint),
             "metadata": self.serde.dumps(metadata),
         }
 
-        if thread_ts:
-            checkpoint_data["parent_ts"] = thread_ts
+        if checkpoint_id:
+            checkpoint_data["parent_checkpoint_id"] = checkpoint_id
 
         try:
-            if thread_ts:
+            if checkpoint_id:
                 while True:
                     parent_check = await self.collection.find_one(
                         {
                             "_id": user_id,
                             "chats.chat_id": chat_id,
-                            "chats.checkpoints.thread_ts": thread_ts,
+                            "chats.checkpoints.checkpoint_id": checkpoint_id,
                         },
                         projection={"_id": 1},
                     )
@@ -246,8 +250,8 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
 
             return {
                 "configurable": {
-                    "thread_id": chat_id,
-                    "thread_ts": checkpoint["id"],
+                    "chat_id": chat_id,
+                    "checkpoint_id": checkpoint["id"],
                     "user_id": user_id,
                 }
             }
@@ -257,37 +261,39 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
     async def aput_writes(
         self,
         config: RunnableConfig,
-        writes: Sequence[Tuple[str, Any]],
+        writes: Sequence[tuple[str, any]],
         task_id: str,
     ) -> None:
-        user_id = config["configurable"]["user_id"]
-        chat_id = config["configurable"]["thread_id"]
-        thread_ts = config["configurable"]["thread_ts"]
+        pass
+        # TODO: Implement this function if needed, langgraph documentation is not clear on what this function should exactly do
+        # user_id = config["configurable"]["user_id"]
+        # chat_id = config["configurable"]["chat_id"]
+        # checkpoint_id = config["configurable"]["checkpoint_id"]
 
-        try:
-            await self.collection.update_one(
-                {
-                    "_id": user_id,
-                    "chats.chat_id": chat_id,
-                    "chats.checkpoints.thread_ts": thread_ts,
-                },
-                {
-                    "$push": {
-                        "chats.$.checkpoints.$[checkpoint].writes": [
-                            {
-                                "task_id": task_id,
-                                "idx": idx,
-                                "channel": channel,
-                                "value": self.serde.dumps(value),
-                            }
-                            for idx, (channel, value) in enumerate(writes)
-                        ]
-                    }
-                },
-                array_filters=[{"checkpoint.thread_ts": thread_ts}],
-            )
-        except Exception as e:
-            logger.error(f"Error in aput_writes function: {e}")
+        # try:
+        #     await self.collection.update_one(
+        #         {
+        #             "_id": user_id,
+        #             "chats.chat_id": chat_id,
+        #             "chats.checkpoints.checkpoint_id": checkpoint_id,
+        #         },
+        #         {
+        #             "$push": {
+        #                 "chats.$.checkpoints.$[checkpoint].writes": [
+        #                     {
+        #                         "task_id": task_id,
+        #                         "idx": idx,
+        #                         "channel": channel,
+        #                         "value": self.serde.dumps(value),
+        #                     }
+        #                     for idx, (channel, value) in enumerate(writes)
+        #                 ]
+        #             }
+        #         },
+        #         array_filters=[{"checkpoint.checkpoint_id": checkpoint_id}],
+        #     )
+        # except Exception as e:
+        #     logger.error(f"Error in aput_writes function: {e}")
 
 
 class MongoDBUsageTracker(MongoDBBase):
