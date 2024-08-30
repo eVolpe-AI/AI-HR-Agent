@@ -65,7 +65,6 @@ class AgentMint:
         """
         try:
             prev_state = await self.app.aget_state(self.config)
-            print(f"Previous state: {prev_state}")
             self.state = GraphState(
                 messages=prev_state.values["messages"],
                 user=self.user_id,
