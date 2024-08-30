@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage
 
-from chat.ChatFactory import ChatFactory
+from llm.ChatFactory import ChatFactory
 from tools.ToolController import ToolController
 from utils.errors import AgentError
 

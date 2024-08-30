@@ -3,6 +3,7 @@ import traceback
 from langchain_core.tools import ToolException
 from loguru import logger
 
+from tools.AvailibilityTool import AvailibilityTool
 from tools.CalendarTool import CalendarTool
 from tools.MintHCM.CreateMeeting import MintCreateMeetingTool
 from tools.MintHCM.CreateRecord import MintCreateRecordTool
@@ -57,6 +58,7 @@ class ToolController:
         "MintDeleteRelTool": MintDeleteRelTool(handle_tool_error=_handle_tool_error),
         "MintGetRelTool": MintGetRelTool(handle_tool_error=_handle_tool_error),
         "CalendarTool": CalendarTool(name="CalendarTool"),
+        "AvailibilityTool": AvailibilityTool(),
     }
 
     default_tools = [
@@ -72,6 +74,7 @@ class ToolController:
         "MintDeleteRelTool",
         "MintGetRelTool",
         "CalendarTool",
+        "AvailibilityTool",
     ]
 
     safe_tools = [

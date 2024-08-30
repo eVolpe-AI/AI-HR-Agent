@@ -15,8 +15,8 @@ from agent_api.messages import (
 )
 from agent_graph.graph import compile_workflow, create_graph
 from agent_state.state import GraphState, HistoryManagement, HistoryManagementType
-from chat.ChatFactory import ProviderConfig
 from database.db_utils import MongoDBUsageTracker
+from llm.ChatFactory import ProviderConfig
 from tools.ToolController import ToolController
 from utils.AgentLogger import AgentLogger
 
@@ -65,7 +65,6 @@ class AgentMint:
         """
         try:
             prev_state = await self.app.aget_state(self.config)
-            print(f"Previous state: {prev_state}")
             self.state = GraphState(
                 messages=prev_state.values["messages"],
                 user=self.user_id,

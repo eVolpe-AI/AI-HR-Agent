@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage, RemoveMessage
 from loguru import logger
 
 from agent_state.state import GraphState, HistoryManagementType
-from chat.ChatFactory import ChatFactory
+from llm.ChatFactory import ChatFactory
 from prompts.PromptController import PromptController
 from utils.errors import AgentError
 
