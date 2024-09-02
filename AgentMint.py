@@ -28,7 +28,7 @@ class AgentMint:
     The main agent class that handles the agent's workflow and interactions with the user.
     """
 
-    def __init__(self, user_id: str, chat_id: str, ip_addr: str, is_advanced: bool) -> None:
+    def __init__(self, user_id: str, mint_user_id:str, chat_id: str, ip_addr: str, is_advanced: bool) -> None:
         tools = ToolController.get_tools()
         self.state = None
         self.chat_id = chat_id
@@ -53,6 +53,7 @@ class AgentMint:
             "configurable": {
                 "chat_id": chat_id,
                 "user_id": user_id,
+                "mint_user_id": mint_user_id,
             }
         }
 

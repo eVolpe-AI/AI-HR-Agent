@@ -290,8 +290,10 @@
                 var message = JSON.parse(event.data);
                 console.log(message);
                 if (message.type === "llm_text") {
+                    var formattedContent = message.content.replace(/\n/g, '<br>');
+
                     if (lastAIMessageElement) {
-                        lastAIMessageElement.innerHTML += message.content;
+                        lastAIMessageElement.innerHTML += formattedContent;
                     } else {
                         var messageElement = document.createElement('div');
                         messageElement.classList.add('chat-message', 'ai-message');
