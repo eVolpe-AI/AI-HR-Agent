@@ -7,9 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_graph.nodes.gear_manager import gear_manager
 from agent_graph.nodes.history_manager import history_manager
-from agent_graph.nodes.intent_retrival import intent_retrival
 from agent_graph.nodes.llm_call import llm_call
-from agent_graph.nodes.output_parser import output_parser
 from agent_graph.nodes.tool_permit import tool_permit
 from agent_state.state import GraphState
 from database.db_utils import MongoDBCheckpointSaver
@@ -27,13 +25,9 @@ def should_continue(state) -> str:
 def check_user_decision(state) -> str:
     decision = state["tool_accept"]
     if decision:
-        return "consent"
+        return "safe"
     else:
-        return "decline"
-
-
-def check_intent(state) -> str:
-    return "continue"
+        return "unsafe"
 
 
 def check_message_type(state) -> str:
@@ -50,35 +44,27 @@ def create_graph(tools: list) -> StateGraph:
     graph.add_node("llm_node", llm_call)
     graph.add_node("tool_node", ToolNode(tools))
     graph.add_node("tool_controller_node", tool_permit)
-    graph.add_node("intent_retrival_node", intent_retrival)
     graph.add_node("gear_manager_node", gear_manager)
-    graph.add_node("output_parsing_node", output_parser)
     graph.add_node("history_manager_node", history_manager)
 
     graph.add_conditional_edges(
         START,
         check_message_type,
-        {"default": "intent_retrival_node", "confirmation": "tool_node"},
-    )
-    graph.add_conditional_edges(
-        "intent_retrival_node",
-        check_intent,
-        {"continue": "gear_manager_node", "end": "output_parsing_node"},
+        {"default": "gear_manager_node", "confirmation": "tool_node"},
     )
     graph.add_edge("gear_manager_node", "history_manager_node")
     graph.add_edge("history_manager_node", "llm_node")
     graph.add_conditional_edges(
         "llm_node",
         should_continue,
-        {"continue": "tool_controller_node", "end": "output_parsing_node"},
+        {"continue": "tool_controller_node", "end": END},
     )
     graph.add_conditional_edges(
         "tool_controller_node",
         check_user_decision,
-        {"consent": "tool_node", "decline": "output_parsing_node"},
+        {"safe": "tool_node", "unsafe": END},
     )
     graph.add_edge("tool_node", "llm_node")
-    graph.add_edge("output_parsing_node", END)
 
     return graph
 
