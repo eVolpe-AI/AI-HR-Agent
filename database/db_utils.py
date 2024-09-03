@@ -350,3 +350,20 @@ class MongoDBUsageTracker(MongoDBBase):
                 }
         except Exception as e:
             logger.error(f"Error while getting token usage: {e}")
+
+
+class AgentDatabase(MongoDBBase):
+    def __init__(
+        self,
+        client: AsyncIOMotorClient,
+        db_name: str,
+        collection_name: str,
+    ) -> None:
+        super().__init__(client, db_name, collection_name)
+
+    async def get(self, field_names: list) -> dict:
+        try:
+            projection = {field: 1 for field in field_names}
+            return await self.collection.find_one({}, projection=projection)
+        except Exception as e:
+            logger.error(f"Error while getting data from database: {e}")

@@ -6,10 +6,12 @@ from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 from loguru import logger
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from agent_api.CredentialManager import CredentialManager
 from agent_api.messages import AgentMessage, AgentMessageType, UserMessage
 from AgentMint import AgentMint
+from database.db_utils import AgentDatabase
 from utils.AgentLogger import configure_logging
 from utils.errors import ServerError
 
@@ -140,13 +142,18 @@ async def websocket_endpoint(
     if not connected:
         return
     try:
+        agent_db = AgentDatabase(
+            AsyncIOMotorClient(os.getenv("MONGO_URI")), os.getenv("DB_NAME"), user_id
+        )
+        user_data = await agent_db.get(["mint_user_id"])
+
         agent = AgentMint(
             user_id=user_id,
+            mint_user_id=user_data.get("mint_user_id"),
             chat_id=chat_id,
             ip_addr=websocket.client.host,
             is_advanced=advanced,
         )
-        agent.visualize_graph()
         while True:
             incoming_message = await websocket.receive_json()
             user_input = UserMessage(incoming_message)

@@ -22,6 +22,7 @@ class PromptController:
         If asked for holidays and events, make sure you knwo wich country the questions regards and search for them with the search tool.
         Do no assume you know what day is now. If you are asked questions regarding today, yesterday, tommorow etc. then always use the CalendarTool to get the current date.
         Some questions may require you to use multiple tools. Think carefully what information you need to best answer and use tools accordinglu or ask additional questions to the user.
+        When listing meetings or calls use tabular format.
         """
 
     @staticmethod

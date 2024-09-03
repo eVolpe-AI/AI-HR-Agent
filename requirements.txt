@@ -65,6 +65,7 @@ mistune==3.0.2
 motor==3.5.1
 multidict==6.0.5
 mypy-extensions==1.0.0
+mysql-connector-python==9.0.0
 nbclient==0.10.0
 nbconvert==7.16.4
 nbformat==5.10.4

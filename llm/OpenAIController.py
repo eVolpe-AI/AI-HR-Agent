@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from chat.BaseController import BaseController
+from llm.BaseController import BaseController
 
 load_dotenv()
 

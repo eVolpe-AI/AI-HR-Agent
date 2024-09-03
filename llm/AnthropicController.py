@@ -3,7 +3,7 @@ from typing import Optional
 from langchain_anthropic.chat_models import ChatAnthropic
 from langchain_core.messages import AIMessage
 
-from chat.BaseController import BaseController
+from llm.BaseController import BaseController
 
 DEFAULT_MODEL = "claude-3-haiku-20240307"
 DEFAULT_MAX_TOKENS = 1000
