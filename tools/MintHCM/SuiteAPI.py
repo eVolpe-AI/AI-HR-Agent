@@ -168,6 +168,15 @@ class SuiteCRM:
         # print(data.content) # TODO remove
         return json.loads(data.content)
 
+    def get_modules(self) -> list:
+        """
+        Gets all the modules that are available in the SuiteCRM.
+        :return: (list) A list of all the modules.
+        """
+        url = "/meta/modules"
+        module_response = self.request(f"{self.baseurl}{url}", "get")
+        return list(module_response["data"]["attributes"].keys())
+
 
 class Module:
 
@@ -313,28 +322,36 @@ class Module:
             raise Exception(result["errors"])
         raise Exception(result["errors"])
 
-    def get_all(self, record_per_page: int = 100) -> list:
-        """
-        Gets all the records in the module.
-        :return: (list) A list of dictionaries, where each dictionary is a record.
-                 Will return all records within a module.
-        """
-        # Get total record count
-        url = f"/module/{self.module_name}?page[number]=1&page[size]=1"
-        pages = (
-            math.ceil(
-                self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "get")["meta"][
-                    "total-pages"
-                ]
-                / record_per_page
-            )
-            + 1
-        )
-        result = []
-        for page in range(1, pages):
-            url = f"/module/{self.module_name}?page[number]={page}&page[size]={record_per_page}"
-            result.extend(self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "get"))
-        return result
+    # TODO 1. Returns list of strings instead of dicts. 2. To check if its necessary to handle pagination
+    # def get_all(self, record_per_page: int = 100) -> list:
+    #     """
+    #     Gets all the records in the module.
+    #     :return: (list) A list of dictionaries, where each dictionary is a record.
+    #              Will return all records within a module.
+    #     """
+    #     # Get total record count
+    #     url = f"/module/{self.module_name}?page[number]=1&page[size]=1"
+    #     pages = (
+    #         math.ceil(
+    #             self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "get")["meta"][
+    #                 "total-pages"
+    #             ]
+    #             / record_per_page
+    #         )
+    #         + 1
+    #     )
+    #     result = []
+    #     for page in range(1, pages):
+    #         url = f"/module/{self.module_name}?page[number]={page}&page[size]={record_per_page}"
+    #         result.extend(self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "get"))
+
+    #     for record in result:
+    #         print(type(record))
+    #     return result
+
+    def get_all(self) -> dict:
+        url = f"/module/{self.module_name}"
+        return self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "get")
 
     def update(self, record_id: str, **attributes) -> dict:
         """
