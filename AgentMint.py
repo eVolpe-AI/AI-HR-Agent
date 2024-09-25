@@ -202,7 +202,7 @@ class AgentMint:
                 if returns_usage_data:
                     usage_data = {
                         "tokens": event["data"]["output"].usage_metadata,
-                        "time": datetime.now(),
+                        "timestamp": datetime.now(),
                     }
                     await self.usage_tracker.push_token_usage(usage_data)
                     self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]

@@ -54,12 +54,12 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         self,
         client: AsyncIOMotorClient,
         db_name: str,
-        collection_name: str,
+        user: str,
         *,
         serde: Optional[SerializerProtocol] = None,
     ) -> None:
         super().__init__(serde=serde)
-        MongoDBBase.__init__(self, client, db_name, collection_name)
+        MongoDBBase.__init__(self, client, db_name, f"{user}_chats")
 
     def __enter__(self) -> Self:
         return self
@@ -77,36 +77,17 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         chat_id = config["configurable"]["chat_id"]
         checkpoint_id = config["configurable"].get("checkpoint_id")
 
-        base_query = {"_id": user_id, "chats.chat_id": chat_id}
+        base_query = {"chat_id": chat_id}
 
         if checkpoint_id:
-            base_query["chats.checkpoints.checkpoint_id"] = checkpoint_id
-
-        projection = {"chats": {"$elemMatch": {"chat_id": chat_id}}}
+            base_query["checkpoint_id"] = checkpoint_id
 
         try:
-            result = await self.collection.find_one(base_query, projection)
+            result = self.collection.find(base_query).sort("checkpoint_id", -1).limit(1)
 
-            if not result or not result.get("chats"):
-                return None
-
-            chat = result["chats"][0]
-
-            if not checkpoint_id:
-                last_checkpoint = (
-                    chat["checkpoints"][-1] if chat.get("checkpoints") else None
-                )
+            if await result.fetch_next:
+                last_checkpoint = await result.next()
             else:
-                last_checkpoint = next(
-                    (
-                        cp
-                        for cp in chat["checkpoints"]
-                        if cp["checkpoint_id"] == checkpoint_id
-                    ),
-                    None,
-                )
-
-            if not last_checkpoint:
                 return None
 
             return CheckpointTuple(
@@ -143,38 +124,29 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
     ) -> AsyncIterator[CheckpointTuple]:
         query = {}
         if config is not None:
-            query["_id"] = config["configurable"]["user_id"]
-            query["chats.chat_id"] = config["configurable"]["chat_id"]
+            query["chat_id"] = config["configurable"]["chat_id"]
 
         if filters:
             for key, value in filters.items():
-                query[f"chats.checkpoints.metadata.{key}"] = value
+                query[f"metadata.{key}"] = value
 
         if before is not None:
-            query["chats.checkpoints.checkpoint_id"] = {
-                "$lt": before["configurable"]["checkpoint_id"]
-            }
+            query["checkpoint_id"] = {"$lt": before["configurable"]["checkpoint_id"]}
 
-        pipeline = [
-            {"$match": query},
-            {"$unwind": "$chats"},
-            {"$unwind": "$chats.checkpoints"},
-            {"$match": query},
-            {"$sort": {"chats.checkpoints.checkpoint_id": -1}},
-        ]
+        result = self.collection.find(query).sort("checkpoint_id", -1)
 
-        if limit is not None:
-            pipeline.append({"$limit": limit})
+        if limit:
+            result = result.limit(limit)
 
         try:
-            async for doc in self.collection.aggregate(pipeline):
-                checkpoint = doc["chats"]["checkpoints"]
+            async for doc in result:
+                checkpoint = self.serde.loads_typed((doc["type"], doc["checkpoint"]))
 
                 parent_config = None
                 if "parent_checkpoint_id" in checkpoint:
                     parent_config = {
                         "configurable": {
-                            "chat_id": doc["chats"]["chat_id"],
+                            "chat_id": doc["chat_id"],
                             "checkpoint_id": checkpoint["parent_checkpoint_id"],
                         }
                     }
@@ -182,18 +154,17 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
                 yield CheckpointTuple(
                     {
                         "configurable": {
-                            "chat_id": doc["chats"]["chat_id"],
+                            "chat_id": doc["chat_id"],
                             "checkpoint_id": checkpoint["checkpoint_id"],
                         }
                     },
-                    self.serde.loads(checkpoint["checkpoint"]),
+                    checkpoint,
                     self.serde.loads(checkpoint["metadata"]),
                     parent_config,
                 )
         except Exception as e:
             logger.error(f"Error in alist function: {e}")
 
-    # TODO: Check if async implementation is needed for this function
     async def aput(
         self,
         config: RunnableConfig,
@@ -206,6 +177,7 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         checkpoint_id = config["configurable"].get("checkpoint_id")
 
         checkpoint_data = {
+            "chat_id": chat_id,
             "checkpoint_id": checkpoint["id"],
             "checkpoint": self.serde.dumps(checkpoint),
             "metadata": self.serde.dumps(metadata),
@@ -215,38 +187,11 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
             checkpoint_data["parent_checkpoint_id"] = checkpoint_id
 
         try:
-            if checkpoint_id:
-                while True:
-                    parent_check = await self.collection.find_one(
-                        {
-                            "_id": user_id,
-                            "chats.chat_id": chat_id,
-                            "chats.checkpoints.checkpoint_id": checkpoint_id,
-                        },
-                        projection={"_id": 1},
-                    )
-                    if parent_check:
-                        break
+            upsert_query = {"chat_id": chat_id, "checkpoint_id": checkpoint["id"]}
 
-            result = await self.collection.update_one(
-                {"_id": user_id, "chats.chat_id": chat_id},
-                {"$push": {"chats.$.checkpoints": checkpoint_data}},
-                upsert=False,
+            await self.collection.update_one(
+                upsert_query, {"$set": checkpoint_data}, upsert=True
             )
-
-            if result.matched_count == 0:
-                await self.collection.update_one(
-                    {"_id": user_id},
-                    {
-                        "$addToSet": {
-                            "chats": {
-                                "chat_id": chat_id,
-                                "checkpoints": [checkpoint_data],
-                            }
-                        }
-                    },
-                    upsert=True,
-                )
 
             return {
                 "configurable": {
@@ -301,33 +246,27 @@ class MongoDBUsageTracker(MongoDBBase):
         self,
         client: AsyncIOMotorClient,
         db_name: str,
-        collection_name: str,
+        user: str,
     ) -> None:
-        super().__init__(client, db_name, collection_name)
+        super().__init__(client, db_name, f"{user}_tokens")
 
     async def push_token_usage(self, usage_data: dict) -> None:
         try:
-            await self.collection.update_one(
-                {"_id": self.collection_name},
-                {"$push": {"tokens": usage_data}},
-                upsert=True,
-            )
+            await self.collection.insert_one(usage_data)
         except Exception as e:
             logger.error(f"Error while pushing token usage: {e}")
 
-    async def get_token_usage(self, user_id: str, hours: int) -> int:
+    async def get_token_usage(self, hours: int) -> int:
         time_period = datetime.now() - timedelta(hours=hours)
 
         pipeline = [
-            {"$match": {"_id": user_id}},
-            {"$unwind": "$tokens"},
-            {"$match": {"tokens.time": {"$gte": time_period}}},
+            {"$match": {"timestamp": {"$gte": time_period}}},
             {
                 "$group": {
                     "_id": None,
-                    "total_input_tokens": {"$sum": "$tokens.tokens.input_tokens"},
-                    "total_output_tokens": {"$sum": "$tokens.tokens.output_tokens"},
-                    "total_tokens": {"$sum": "$tokens.tokens.total_tokens"},
+                    "total_input_tokens": {"$sum": "$tokens.input_tokens"},
+                    "total_output_tokens": {"$sum": "$tokens.output_tokens"},
+                    "total_tokens": {"$sum": "$tokens.total_tokens"},
                 }
             },
         ]
@@ -357,9 +296,9 @@ class AgentDatabase(MongoDBBase):
         self,
         client: AsyncIOMotorClient,
         db_name: str,
-        collection_name: str,
+        user: str,
     ) -> None:
-        super().__init__(client, db_name, collection_name)
+        super().__init__(client, db_name, user)
 
     async def get(self, field_names: list) -> dict:
         try:

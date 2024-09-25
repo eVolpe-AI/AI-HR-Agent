@@ -143,7 +143,9 @@ async def websocket_endpoint(
         return
     try:
         agent_db = AgentDatabase(
-            AsyncIOMotorClient(os.getenv("MONGO_URI")), os.getenv("DB_NAME"), user_id
+            AsyncIOMotorClient(os.getenv("MONGO_URI")),
+            os.getenv("DB_NAME"),
+            user_id,
         )
         user_data = await agent_db.get(["mint_user_id"])
 
