@@ -4,31 +4,49 @@
 <img src="mint_agent/utils/graph_schema.png" alt="graph image" width="350"/>
 
 ## Installation
+1. Install Poetry: https://python-poetry.org/docs/
 
-1. Set up envrinment with python ( Tested on: 3.12.5)
-
-2. Prepare mongoDB database
-
-3. Run on envrionment required installs:
-    ```sh
-    pip install -r requirements.txt
+2. Install Agent with Poetry
     ```
+    poetry install
+    ```
+
+3. Prepare mongoDB database
+
 4. Copy .env_example as .env and fill in required fields
 
     required fileds for now:
     ```
-    ANTHROPIC_API_KEY
-    LANGCHAIN_API_KEY
+    # Anthropic API
+    ANTHROPIC_API_KEY = <ANTHROPIC_API_KEY>
 
-    MONGO_URI
-    DB_NAME
+    # Agent Configuration
+    LLM_PROVIDER = ANTHROPIC
+    LLM_MODEL = claude-3-haiku-20240307
 
-    MINT_API_URL
+    #Agent mongo database
+    MONGO_URI = <MONGO_DB_URI>
+    DB_NAME = <DB_NAME>
 
-    LOG_LEVEL
-    LOG_TO_CONSOLE
-    LOG_FILE
-    LOG_COLORING_IN_FILE
+    #MintHCM mysql database
+    MINTDB_URI = <MINTDB_URI>
+    MINTDB_PORT = <MINTDB_PORT>
+    MINTDB_USER = <MINTDB_USER>
+    MINTDB_PASS = <MINTDB_PASSWORD>
+    MINTDB_DATABASE_NAME = <MINTDB_DATABASE_NAME>
+
+    #MintHCM API
+    MINT_API_URL = <MINT_API_URL>
+
+    #Agent websocket API
+    API_IP = <API_IP>
+    API_PORT = <API_PORT>
+
+    #Logging configuration
+    LOG_LEVEL = <DEBUG|WARNING|ERROR>
+    LOG_TO_CONSOLE = <TRUE|FALSE>
+    LOG_FILE = e.g. /tmp/agent.log
+    LOG_COLORING = <TRUE|FALSE>
     ```
 
 5. Prepare database structure:
@@ -39,14 +57,15 @@
             [
               {
                 "_id": "admin",
-                "auth_token": "test_token_123",
+                "auth_token": "1",
+                "mint_user_id": "1",
                 "user_credentials": [
                   {
                     "system": "MintHCM",
                     "credential_type": "APIV8",
                     "credentials": {
-                      "client_id": "test_id",
-                      "secret": "test_secret"
+                      "client_id": "...",
+                      "secret": "..."
                     }
                   }
                 ]
@@ -55,7 +74,7 @@
         ```
     2. Run script to populate database:
         ```sh
-        python utils/generate_credentials.py
+        poetry run generate_credentials
         ```
 
 ## Running the App:
@@ -63,11 +82,11 @@
 1. Run the app: 
     * Test chat widget:
         ```sh
-        uvicorn server:app_http --host=0.0.0.0 --port=80
+        poetry run test_chat
         ```
-    * Agent API:
+    * Agent API (`dev` runs uvicorn with auto-reload enabled):
         ```sh
-        uvicorn server:app_ws --host=0.0.0.0 --port=5288
+        poetry run dev | poetry run prod
         ```
 
 2. Use test chat widget on `localhost:80` or connect to websocket: `ws://localhost:5288/<user_id>/<chat_id>/<token>?advanced=<advanced>` where:
