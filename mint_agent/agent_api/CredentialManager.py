@@ -29,7 +29,7 @@ class CredentialManager:
             bool: True if the user is authenticated, False otherwise.
         """
         collection = self.db[user_id]
-        user = collection.find_one({"_id": user_id, "auth_token": token})
+        user = collection.find_one({"_id": user_id, "mint_user_id": token})
         return bool(user)
 
     def get_system_credentials(

@@ -1,7 +1,6 @@
 import json
-import os
 import traceback
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
@@ -11,7 +10,7 @@ from pydantic import BaseModel, Field
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
 from mint_agent.tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
 from mint_agent.tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
-from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintSearchInput(BaseModel):
@@ -31,12 +30,12 @@ class MintSearchInput(BaseModel):
         ONLY available operators : =, <> , > , >=,  < ,  <=, LIKE, NOT LIKE, IN, NOT IN, BETWEEN
         For operators IN, NOT IN set value as string with comma separated values.
         For operator BETWEEN set value as string with two values separated by comma.
-        When performing search on a datetime field to find records related to a specific date, use operator BEETWEEN  specific_date and specific_date + 1 day.
-        Make sure to use operator BEETWEEN for datetime fields when searching by datetime field to find records related to a specific date.
+        When performing search on a datetime field to find records related to a specific date, use operator BETWEEN  specific_date and specific_date + 1 day.
+        Make sure to use operator BETWEEN for datetime fields when searching by datetime field to find records related to a specific date.
         Example, search for date_start on 2022-01-01:  { "filters": {
-                         "date_start": { "operator": "BEETWEEN", "value": "2022-01-01,2022-01-02" },
+                         "date_start": { "operator": "BETWEEN", "value": "2022-01-01,2022-01-02" },
                 } }
-        Remeber that dates returned by MintHCM are in UTC timezone.
+        Remember that dates returned by MintHCM are in UTC timezone.
         If you need BETWEEN operator, you need to use two filters with > and < operators.
     """,
     )
@@ -52,9 +51,7 @@ class MintSearchInput(BaseModel):
 
 class MintSearchTool(BaseTool, MintBaseTool):
     name: str = "MintSearchTool"
-    description: str = (
-        "Tool to retrieve list of records from MintHCM. Always use MintGetModuleFieldsTool to get list of fields available in the module. Do not use this tool without knowing the fields available in the module!"
-    )
+    description: str = "Tool to retrieve list of records from MintHCM. Always use MintGetModuleFieldsTool to get list of fields available in the module. Do not use this tool without knowing the fields available in the module!"
     args_schema: Type[BaseModel] = MintSearchInput
 
     def _run(
@@ -85,7 +82,6 @@ class MintSearchTool(BaseTool, MintBaseTool):
             fieldss = module_fields["fields"]
             field_names = fieldss.keys()
             for field in fields_array:
-
                 if field and field not in field_names:
                     # print(f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module.")
                     print(field_names)
@@ -161,7 +157,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
                 )
             print(f"response: {response}")
             data = response
-            # copy rows from data to return_data, olny the attributes
+            # copy rows from data to return_data, only the attributes
             return_data = []
             for row in data:
                 return_data.append({"id": row["id"], **row["attributes"]})

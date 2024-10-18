@@ -26,7 +26,7 @@ def generate_credentials():
             collection_name = user["_id"]
             collection = db[collection_name]
 
-            query = {"_id": user["_id"], "auth_token": user["auth_token"]}
+            query = {"_id": user["_id"], "auth_token": user["mint_user_id"]}
 
             credentials_to_save = (
                 user["user_credentials"] if "user_credentials" in user else {}

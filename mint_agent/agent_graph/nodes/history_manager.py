@@ -27,7 +27,6 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
         raise AgentError("Failed to call LLM to summarize conversation") from e
 
     if isinstance(summary.content, str):
-        print(f"Summary content: {summary.content}")
         return summary.content
     else:
         return summary.content[-1]["text"]

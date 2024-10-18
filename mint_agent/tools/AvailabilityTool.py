@@ -17,20 +17,20 @@ class ModuleType(str, Enum):
     CALLS = "calls"
 
 
-class AvailibilityInput(BaseModel):
+class AvailabilityInput(BaseModel):
     start_date: str = Field(description="Start date of the period in YYYY-MM-DD format")
     end_date: str = Field(description="End date of the period in YYYY-MM-DD format")
     modules: list[ModuleType] = Field(
-        description="List of modules to check availibility for, can include 'meetings' and/or 'calls'"
+        description="List of modules to check availability for, can include 'meetings' and/or 'calls'"
     )
 
 
-class AvailibilityTool(BaseTool):
-    name = "AvailibilityTool"
+class AvailabilityTool(BaseTool):
+    name = "AvailabilityTool"
     description = """
-        Useful when you want to check the availibility of a person. This tool returns infromation about times when user is not available due to meetings and/or calls. 
+        Useful when you want to check the availability of a person. This tool returns information about times when user is not available due to meetings and/or calls. 
     """
-    args_schema: Type[BaseModel] = AvailibilityInput
+    args_schema: Type[BaseModel] = AvailabilityInput
 
     def _run(
         self,
@@ -50,7 +50,7 @@ class AvailibilityTool(BaseTool):
                 database=os.environ.get("MINTDB_DATABASE_NAME"),
             )
         except Error:
-            return f"Coudn't connect to the database. can't get the availibility"
+            return "Couldn't connect to the database. can't get the availability"
 
         meetings, calls = None, None
         mint_user_id = config.get("configurable", {}).get("mint_user_id")

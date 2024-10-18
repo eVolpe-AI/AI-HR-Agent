@@ -34,8 +34,7 @@ class MintDeleteRecordTool(BaseTool, MintBaseTool):
         try:
             suitecrm = self.get_connection(config)
             url = f"{self.api_url}/module/{module_name}/{id}"
-            response = suitecrm.request(url, "delete")
-            return "W module " + module_name + " usunięto rekord o id: " + id
+            retunr "In module " + module_name + " record with id: " + id + " has been deleted"
         except Exception as e:
             print(traceback.format_exc())
             raise ToolException(f"Error: {e}")

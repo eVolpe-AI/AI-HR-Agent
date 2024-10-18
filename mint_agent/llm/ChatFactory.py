@@ -49,36 +49,21 @@ class ProviderConfig:
 
 
 class ChatFactory:
-
     model_controllers = {
-        #'MIXTRAL': MixtralController,
-        #'MISTRAL': MistralController,
         "ANTHROPIC": AnthropicController,
-        # "ANTHROPIC_AWS": AnthropicBedrockController,
         "OPENAI": OpenAIController,
-        #'CHATGPT_AZURE' : ChatGptAzureController,
-        #'GROQ': GroqController,
     }
 
     models = {
-        #'MIXTRAL': MixtralController,
-        #'MISTRAL': MistralController,
         "ANTHROPIC": [
             "claude-3-haiku-20240307",
             # "claude-3-sonnet-20240229",
             # "claude-3-opus-20240229",
         ],
-        # "ANTHROPIC_AWS": [
-        #     "claude-3-haiku-20240307-v1:0",
-        #     "claude-3-sonnet-20240229-v1:0",
-        #     "claude-3-opus-20240229-v1:0",
-        # ],
         "OPENAI": [
             "gpt-4o-mini-2024-07-18"
             # "gpt4o",
         ],
-        #'CHATGPT_AZURE' : ChatGptAzureController,
-        #'GROQ': GroqController,
     }
 
     @staticmethod

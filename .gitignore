@@ -1,11 +1,6 @@
-models
-.rasa
 .vscode
 .env
 .conda
 __pycache__
 AccessToken.txt
-tmp
-*.log
 credentials.json
-run_server.ps1

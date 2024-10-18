@@ -1,9 +1,7 @@
-import traceback
-
 from langchain_core.tools import ToolException
 from loguru import logger
 
-from mint_agent.tools.AvailibilityTool import AvailibilityTool
+from mint_agent.tools.AvailabilityTool import AvailabilityTool
 from mint_agent.tools.CalendarTool import CalendarTool
 from mint_agent.tools.MintHCM.CreateMeeting import MintCreateMeetingTool
 from mint_agent.tools.MintHCM.CreateRecord import MintCreateRecordTool
@@ -19,9 +17,7 @@ from mint_agent.tools.MintHCM.UpdateFields import MintUpdateFieldsTool
 
 
 def _handle_tool_error(error: ToolException) -> str:
-    # find if what was returned contains fraze "Module ... does not exist"
-    # print("FULL TRACEBACK:")
-    # print(traceback.format_exc())
+    # find if what was returned contains phrase "Module ... does not exist"
     if "does not exist" in error.args[0]:
         logger.error(f"Agent was trying to use module, which does not exist. {error}")
         return f"Module Error: {error} . Try to use MintGetModuleNamesTool to get list of available modules."
@@ -58,7 +54,7 @@ class ToolController:
         "MintDeleteRelTool": MintDeleteRelTool(handle_tool_error=_handle_tool_error),
         "MintGetRelTool": MintGetRelTool(handle_tool_error=_handle_tool_error),
         "CalendarTool": CalendarTool(name="CalendarTool"),
-        "AvailibilityTool": AvailibilityTool(),
+        "AvailabilityTool": AvailabilityTool(),
     }
 
     default_tools = [
@@ -74,7 +70,7 @@ class ToolController:
         "MintDeleteRelTool",
         "MintGetRelTool",
         "CalendarTool",
-        "AvailibilityTool",
+        "AvailabilityTool",
     ]
 
     safe_tools = [

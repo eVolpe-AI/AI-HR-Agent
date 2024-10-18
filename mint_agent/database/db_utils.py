@@ -193,7 +193,6 @@ class MongoDBCheckpointSaver(BaseCheckpointSaver, AbstractContextManager, MongoD
         except Exception as e:
             logger.error(f"Error in alist function: {e}")
 
-    # TODO: Check if async implementation is needed for this function
     async def aput(
         self,
         config: RunnableConfig,

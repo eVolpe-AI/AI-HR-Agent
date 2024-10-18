@@ -1,5 +1,4 @@
-import traceback
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
@@ -38,6 +37,6 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, "post", parameters=data)
-            return "W module " + module_name + " utworzono nowy rekord"
+            return "New record created for module: " + module_name
         except Exception as e:
             raise ToolException(f"Error: {e}")
