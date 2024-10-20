@@ -29,7 +29,7 @@ class MintGetRelTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         try:
             suitecrm = self.get_connection(config)
-            result = suitecrm.Meetings.get_relationship(record_id, related_module)
+            suitecrm.Meetings.get_relationship(record_id, related_module)
             return {"status": "success"}
         except Exception as e:
             return {"status": "error", "message": str(e)}

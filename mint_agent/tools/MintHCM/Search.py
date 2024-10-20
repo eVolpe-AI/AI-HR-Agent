@@ -1,5 +1,4 @@
 import json
-import traceback
 from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
@@ -84,7 +83,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
             for field in fields_array:
                 if field and field not in field_names:
                     # print(f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module.")
-                    print(field_names)
+                    # print(field_names)
                     raise ToolException(
                         f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module."
                     )
@@ -92,13 +91,13 @@ class MintSearchTool(BaseTool, MintBaseTool):
             suitecrm = self.get_connection(config)
             module = Module(suitecrm, module_name)
 
-            print(f"Module: {module_name}, filters: {filters}, fields: {fields}")
+            # print(f"Module: {module_name}, filters: {filters}, fields: {fields}")
 
             filters_array = json.loads(filters)
             fields_array = fields.replace(" ", "").split(",")
 
-            print(f"Filters: {filters_array}")
-            print(f"Fields: {fields_array}")
+            # print(f"Filters: {filters_array}")
+            # print(f"Fields: {fields_array}")
 
             if operator not in ["and", "or"]:
                 operator = "and"
@@ -161,8 +160,6 @@ class MintSearchTool(BaseTool, MintBaseTool):
             return_data = []
             for row in data:
                 return_data.append({"id": row["id"], **row["attributes"]})
-            print(f"Return data: {return_data}")
             return {"data": return_data}
         except Exception as e:
-            print(traceback.format_exc())
             raise ToolException(f"Error: {e}")

@@ -1,14 +1,17 @@
-import datetime
+import os
 from typing import Optional
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class PromptController:
-    simple: str = "Answer only in polish."
+    simple: str = "Answer only in {language}"
 
     default: str = """
-        Today is {today}.
         User you are talking to is a user of MintHCM with username {username}.
-        Always answer in polish.
+        Always answer in {language}.
         You are a helpful assistant. You have access to several tools. Always check with CalendarTool what day it is today. 
         Your task is to provide accurate and relevant information to the user. 
         Use tools to get additional information and provide the user with the most relevant answer. 
@@ -23,13 +26,13 @@ class PromptController:
 
     @staticmethod
     def get_simple_prompt() -> str:
-        today = datetime.datetime.now().strftime("%d-%m-%Y")
-        return PromptController.simple.format(today=today)
+        language = os.getenv("LLM_LANGUAGE", "english")
+        return PromptController.simple.format(language=language)
 
     @staticmethod
     def get_default_prompt(username: str) -> str:
-        today = datetime.datetime.now().strftime("%d-%m-%Y")
-        return PromptController.default.format(username=username, today=today)
+        language = os.getenv("LLM_LANGUAGE", "english")
+        return PromptController.default.format(username=username, language=language)
 
     @staticmethod
     def get_summary_prompt(prev_summary: Optional[str]) -> str:

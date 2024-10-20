@@ -13,7 +13,7 @@ class CredentialManager:
 
     def __init__(self):
         db_uri = os.getenv("MONGO_URI")
-        db_name = os.getenv("DB_NAME")
+        db_name = os.getenv("MONGO_DB_NAME")
         self.client = MongoClient(db_uri)
         self.db = self.client[db_name]
 

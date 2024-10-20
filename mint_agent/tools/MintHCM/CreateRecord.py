@@ -36,7 +36,7 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
             suitecrm = self.get_connection(config)
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
-            response = suitecrm.request(url, "post", parameters=data)
-            return "New record created for module: " + module_name
+            suitecrm.request(url, "post", parameters=data)
+            return f"New record created for module: {module_name}"
         except Exception as e:
             raise ToolException(f"Error: {e}")

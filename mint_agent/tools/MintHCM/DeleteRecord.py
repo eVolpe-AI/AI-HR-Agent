@@ -1,5 +1,4 @@
-import traceback
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
@@ -34,7 +33,7 @@ class MintDeleteRecordTool(BaseTool, MintBaseTool):
         try:
             suitecrm = self.get_connection(config)
             url = f"{self.api_url}/module/{module_name}/{id}"
-            retunr "In module " + module_name + " record with id: " + id + " has been deleted"
+            suitecrm.request(url, "delete")
+            return f"Record with id: {id} has been deleted from module {module_name}"
         except Exception as e:
-            print(traceback.format_exc())
             raise ToolException(f"Error: {e}")

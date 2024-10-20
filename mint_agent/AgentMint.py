@@ -51,7 +51,9 @@ class AgentMint:
         self.app = compile_workflow(self.graph, user_id)
 
         self.usage_tracker = MongoDBUsageTracker(
-            AsyncIOMotorClient(os.getenv("MONGO_URI")), os.getenv("DB_NAME"), user_id
+            AsyncIOMotorClient(os.getenv("MONGO_URI")),
+            os.getenv("MONGO_DB_NAME"),
+            user_id,
         )
 
         self.history_config = HistoryManagement(

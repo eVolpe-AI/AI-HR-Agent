@@ -70,7 +70,7 @@ def create_graph(tools: list) -> StateGraph:
 
 def compile_workflow(graph: StateGraph, username: str) -> CompiledGraph:
     MONGO_URI = os.getenv("MONGO_URI")
-    DB_NAME = os.getenv("DB_NAME")
+    DB_NAME = os.getenv("MONGO_DB_NAME")
     checkpointer = MongoDBCheckpointSaver(
         AsyncIOMotorClient(MONGO_URI), DB_NAME, username
     )

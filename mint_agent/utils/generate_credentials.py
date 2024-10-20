@@ -10,7 +10,7 @@ def generate_credentials():
         load_dotenv()
 
         db_uri = os.getenv("MONGO_URI")
-        db_name = os.getenv("DB_NAME")
+        db_name = os.getenv("MONGO_DB_NAME")
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         credential_path = os.path.join(current_dir, "../credentials.json")

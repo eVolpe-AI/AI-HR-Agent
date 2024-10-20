@@ -1,18 +1,9 @@
 from typing import Optional
 
-# from chat.ChatGptAzureController import ChatGptAzureController
-# from llm.Qra13bController import Qra13bController
-# from chat.GroqController import GroqController
 from mint_agent.llm.AnthropicController import AnthropicController
-
-# from llm.MixtralController import MixtralController
-# from llm.MistralController import MistralController
 from mint_agent.llm.OpenAIController import OpenAIController
 
-# from chat.AnthropicBedrockController import AnthropicBedrockController
 
-
-# TODO move more responsibility to each provider controller
 class ProviderConfig:
     """
     Configuration class for different providers.
