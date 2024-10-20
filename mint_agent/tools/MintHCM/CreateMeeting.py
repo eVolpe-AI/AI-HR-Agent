@@ -6,6 +6,7 @@ from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintCreateMeetingInput(BaseModel):
@@ -42,7 +43,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     Tool to create new meetings with attendees in MintHCM modules.
     Dont use this tool without knowing the fields available in the module.
     Use CalendarTool to get current_date and derive from it proper date_start and date_end for the meeting if asked to create meeting for today, tomorrow etc.
-    Use MintGetModuleFieldsTool to get list of fields available in the module.
+    Use MintGetModuleFieldsTool to get list of fields available in the module. Return to the user the link to the created meeting.
     """
     args_schema: Type[BaseModel] = MintCreateMeetingInput
 
@@ -60,6 +61,8 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, "post", parameters=data)
+            module = Module(suitecrm, module_name)
+            meeting_url = module.get_url(response["data"]["id"])
 
             def add_relationships(relationship_type, ids):
                 for record_id in ids:
@@ -77,7 +80,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             if candidates:
                 add_relationships("candidates", candidates)
 
-            return "New meeting created in module 'Meetings'."
+            return f"New meeting created in module 'Meetings'. Link to the meeting: {meeting_url}"
 
         except Exception as e:
             raise ToolException(f"Error: {e}")

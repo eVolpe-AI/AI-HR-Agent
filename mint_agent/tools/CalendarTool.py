@@ -22,6 +22,11 @@ class CalendarTool(BaseTool):
 
     def _run(
         self, format: str, run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
+    ) -> dict:
         """Use the tool."""
-        return date.today().strftime("%Y-%m-%d (%A)")
+        tool_response = {
+            "stdout": date.today().strftime("%Y-%m-%d (%A)"),
+            "artifacts": "Test calendar tool",
+        }
+        # return date.today().strftime("%Y-%m-%d (%A)")
+        return tool_response

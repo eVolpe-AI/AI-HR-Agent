@@ -75,6 +75,12 @@ class ToolController:
 
     safe_tools = [
         "CalendarTool",
+        "AvailabilityTool",
+        "MintGetRelTool",
+        "MintGetUsersTool",
+        "MintGetModuleNamesTool",
+        "MintGetModuleFieldsTool",
+        "MintSearchTool",
     ]
 
     @staticmethod

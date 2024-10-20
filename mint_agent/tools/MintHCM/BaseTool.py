@@ -2,7 +2,6 @@ import os
 from abc import ABC, abstractmethod
 
 from dotenv import load_dotenv
-from loguru import logger
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
 from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
@@ -49,6 +48,21 @@ class BaseAgentTool(ABC):
         """
         raise NotImplementedError
 
+    def create_tool_response(
+        self,
+        response: str,
+    ) -> dict:
+        """
+        Method to create a response for a tool.
+
+        Args:
+            response (dict): The response from the tool.
+
+        Returns:
+            dict: The response for the tool.
+        """
+        return response
+
 
 class MintBaseTool(BaseAgentTool):
     """
@@ -59,6 +73,7 @@ class MintBaseTool(BaseAgentTool):
     """
 
     api_url = os.getenv("MINT_API_URL")
+    mint_url = os.getenv("MINT_URL")
 
     @property
     def system(self):
