@@ -4,10 +4,10 @@ from typing import Type
 
 import mysql.connector
 from dotenv import load_dotenv
-from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool
 from langchain_core.runnables.config import RunnableConfig
 from mysql.connector import Error
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -26,8 +26,8 @@ class AvailabilityInput(BaseModel):
 
 
 class AvailabilityTool(BaseTool):
-    name = "AvailabilityTool"
-    description = """
+    name: str = "AvailabilityTool"
+    description: str = """
         Useful when you want to check the availability of a person. This tool returns information about times when user is not available due to meetings and/or calls. 
     """
     args_schema: Type[BaseModel] = AvailabilityInput

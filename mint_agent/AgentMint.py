@@ -79,7 +79,7 @@ class AgentMint:
         try:
             prev_state = await self.app.aget_state(self.config)
             self.state = GraphState(
-                messages=prev_state.values["messages"],
+                messages=prev_state.values.get("messages", []),
                 user=self.user_id,
                 provider=os.environ.get("LLM_PROVIDER", "ANTHROPIC"),
                 model_name=os.environ.get("LLM_MODEL", "claude-3-haiku-20240307"),

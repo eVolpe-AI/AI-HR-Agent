@@ -101,3 +101,9 @@ class MintBaseTool(BaseAgentTool):
             )
         except Exception as e:
             raise e
+
+
+class ToolResponse:
+    def __init__(self, stdout: str, artifacts: str):
+        self.stdout = stdout
+        self.artifacts = artifacts

@@ -1,5 +1,5 @@
 import json
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, List, Optional, Sequence, Union, cast
 
 from langchain_core.messages import ToolCall, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -12,17 +12,28 @@ INVALID_TOOL_NAME_ERROR_TEMPLATE = (
 TOOL_CALL_ERROR_TEMPLATE = "Error: {error}\n Please fix your mistakes."
 
 
-def str_output(output: Any) -> str:
+def msg_content_output(output: Any) -> str | List[dict]:
+    recognized_content_block_types = ("image", "image_url", "text", "json")
     if isinstance(output, str):
         return output
+    elif all(
+        [
+            isinstance(x, dict) and x.get("type") in recognized_content_block_types
+            for x in output
+        ]
+    ):
+        return output
+    # Technically a list of strings is also valid message content but it's not currently
+    # well tested that all chat models support this. And for backwards compatibility
+    # we want to make sure we don't break any existing ToolNode usage.
     else:
         try:
-            return json.dumps(output)
+            return json.dumps(output, ensure_ascii=False)
         except Exception:
             return str(output)
 
 
-class AgetToolNode(ToolNode):
+class AgentToolNode(ToolNode):
     def __init__(
         self,
         tools: Sequence[Union[BaseTool | Callable]],
@@ -45,7 +56,9 @@ class AgetToolNode(ToolNode):
             tool_message: ToolMessage = self.tools_by_name[call["name"]].invoke(
                 input, config
             )
-            tool_message.content = str_output(tool_message.content)
+            tool_message.content = cast(
+                Union[str, list], msg_content_output(tool_message.content)
+            )
             return tool_message
         except Exception as e:
             if not self.handle_tool_errors:
@@ -59,15 +72,14 @@ class AgetToolNode(ToolNode):
         try:
             input = {**call, **{"type": "tool_call"}}
             tool_message: ToolMessage = await self.tools_by_name[call["name"]].ainvoke(
-                input,
-                config,
+                input, config
             )
-            content, artifacts = (
-                tool_message.content.get("stdout"),
-                tool_message.content.get("artifacts"),
+            tool_response = json.loads(tool_message.content)
+            primary_response = tool_response["primary_response"]
+            extra_message = tool_response.get("extra_message", "")
+            tool_message.content = cast(
+                Union[str, list], msg_content_output(primary_response)
             )
-            tool_message.content = str_output(content)
-            tool_message.artifacts = artifacts
             return tool_message
         except Exception as e:
             if not self.handle_tool_errors:

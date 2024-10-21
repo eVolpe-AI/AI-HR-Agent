@@ -23,8 +23,8 @@ class MintUpdateDataInput(BaseModel):
 
 
 class MintUpdateFieldsTool(BaseTool, MintBaseTool):
-    name = "MintUpdateFieldsTool"
-    description = """Use this tool to update fields in the module based on data received from the user. Use this tool to update value of the field in the module,
+    name: str = "MintUpdateFieldsTool"
+    description: str = """Use this tool to update fields in the module based on data received from the user. Use this tool to update value of the field in the module,
     for example, duration or start date. Before using MintUpdateFieldsTool, ensure you have the correct module name and record ID. If not, use MintSearchTool to retrieve them.
 """
     args_schema: Type[BaseModel] = MintUpdateDataInput
