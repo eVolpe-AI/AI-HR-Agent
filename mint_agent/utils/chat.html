@@ -6,263 +6,301 @@
     <title>Mint Agent Chat</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #0e1117;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
+            display: flex;
+            height: 100vh;
         }
 
-        .chat-container {
-            width: 80vw;
-            height: 80vh;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
+        .sidebar {
+            background-color: #31333F;
+            width: 20vw;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            background-color: #262730;
+            justify-content: flex-start;
+            gap: 20px;
         }
 
         .chat-header {
-            background-color: #262730;
-            color: white;
-            padding: 10px;
+            background-color: #0E1117;
+            color: #ffffff;
+            padding: 20px;
             text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
         }
 
         .chat-messages {
             flex: 1;
-            padding: 10px;
+            padding: 20px;
             overflow-y: auto;
-            border-top: 1px solid #ddd;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .chat-message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .user-message {
-            text-align: left;
-            font-weight: bolder;
-            background-color: #8fccf7;
-        }
-
-        .ai-message {
-            text-align: left;
-            background-color: #e1ffc7;
-        }
-
-        .ai-debug {
-            text-align: left;
-            background-color: #f7f7f7;
-        }
-
-        .ai-tool {
-            text-align: center;
-            background-color: #c6abfb;
-        }
-
-        .error {
-            background-color: #e72424;
-            color: white;
-            animation: fadeOut 5s forwards;
-        }
-
-        .chat-input {
+            background-color: #0E1117;
             display: flex;
-            padding: 10px;
-            border-top: 1px solid #63C29A;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .chat-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        .chat-input button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-        }
-
-        .confirm-button {
-            background-color: #28a745;
-        }
-
-        .confirm-button:hover {
-            background-color: #218838;
-        }
-
-        .decline-button {
-            background-color: #dc3545;
-        }
-
-        .decline-button:hover {
-            background-color: #c82333;
-        }
-
-        .chat-input button:hover {
-            background-color: #0056b3;
-        }
-
-        .button-box {
+        .input-section {
             display: flex;
-            justify-content: center;
-        }   
-
-        .connect {
-            background-color: #28a745;
-        }
-
-        .connect:hover {
-            background-color: #218838;
-        }
-
-        .close {
-            background-color: #dc3545;
-        }
-
-        .close:hover {
-            background-color: #c82333;
-        }
-
-        .reconnect {
-            background-color: #ffc107;
-        }
-
-        .reconnect:hover {
-            background-color: #e0a800;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .input-box {
             display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center;
-            margin: 10px;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .input-box div {
-            display: flex;
-            align-items: center;
-            margin: 5px;
-        }
-
-        .input-box label, .token_box label {
-            margin-right: 5px;
-            color: #07111D;
+        label {
             font-weight: bold;
+            color: #bbbbbb;
         }
 
-        .input-box input, .token_box input {
-            padding: 5px;
-            border: 1px solid #ddd;
+        .input-box input {
+            padding: 10px;
             border-radius: 5px;
+            background-color: #0E1117;
+            color: #e0e0e0;
+            border: 0;
+        }
+
+        .button-box {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        button.connect {
+            background-color: #4caf50;
+        }
+
+        button.close {
+            background-color: #f44336;
+        }
+
+        button.reconnect {
+            background-color: #2196f3;
         }
 
         .status {
-            background-color: #005fc4;
-            color: white;
-            padding: 10px;
             text-align: center;
-            font-weight: bolder;
-            border-top: 1px solid #63C29A;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f44336ae;
+            margin-top: 20px;
+            border: 2px solid #f44336ae;
+            padding: 10px;
+            border-radius: 10px;
         }
 
-        .status.error {
-            background-color: #dc3545;
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
-        .status.connected {
-            background-color: #28a745;
+        ::-webkit-scrollbar {
+            width: 10px;
         }
 
-        .status.reconnecting {
-            background-color: #ffc107;
+        ::-webkit-scrollbar-thumb {
+            background-color: #555;
+            border-radius: 5px;
+        }
+
+        .chat-message {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 75%;
+            font-size: 1.1em;
+            transition: transform 0.2s ease;
+            color: #bbbbbb;
+        }
+
+        .error {
+            border: 2px solid #f44336ae;
+            max-width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 15px;
+            color: #f44336ae;
+        }
+
+        .user-message {
+            background-color: #424558;
+            color: white;
+            align-self: flex-end;
+            text-align: right;
+            border-bottom-right-radius: 0;
+        }
+
+        .ai-message {
+            background-color: #3c6e47;
+            color: white;
+            align-self: flex-start;
+            text-align: left;
+            border-bottom-left-radius: 0;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background-color: #0E1117;
+            border-top: #3c6e47 2px solid;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px 25px;
+            margin: 0 20px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #0E1117;
+            color: #e0e0e0;
+            font-size: 1.1em;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .checkbox-box {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .connected {
+            color: #4caf50;
+            border: 2px solid #4caf50;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        button:hover {
+            filter: brightness(85%);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: filter 0.3s ease, box-shadow 0.3s ease;
         }
 
         button:disabled {
-            background-color: #ccc;
+            background-color: #555;
             cursor: not-allowed;
         }
 
-        button:disabled:hover {
-            background-color: #c9c8c8
+        .chat-message {
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        .token_box {
+        input.defaultCheckbox {
+            width: 2em;
+            height: 2em;
+        }
+
+        .ai-tool {
+            border: 1px solid #3c6e47;
+            color: #3c6e47;
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .confirm {
+            background-color: #4caf50;
+        }
+
+        .decline {
+            background-color: #f44336;
+        }
+
+        .buttons {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px;
+            flex-direction: row;
+            gap: 10px;
         }
-
-        .token_box input {
-            width: 60%;
-        }
-        
     </style>
 </head>
 <body>
+    <div class="sidebar">
+        <div class="input-section">
+            <div class="input-box">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="admin">
+            </div>
+            <div class="input-box">
+                <label for="connection_id">Chat ID:</label>
+                <input type="text" id="connection_id" value="1">
+                <button id="roll-id">🔄</button>
+            </div>
+            <div class="checkbox-box">
+                <label for="advanced">Advanced user:</label>
+                <input type="checkbox" id="advanced" name="advanced" value="True" class="defaultCheckbox">
+            </div>
+            <div class="input-box">
+                <label for="token">Authentication token:</label>
+                <input type="text" id="token">
+            </div>
+        </div>
+        <div class="button-box">
+            <button id="connect" class="connect">Connect</button>
+            <button id="close" class="close" disabled>Close</button>
+            <button id="reconnect" class="reconnect" disabled>Reconnect</button>
+        </div>
+        <div id="status" class="status">Disconnected</div>
+    </div>
+
     <div class="chat-container">
         <div class="chat-header">
-            <div>
-                <div>
-                    <label for="username">User ID:</label>
-                    <input type="text" id="username" value="admin">
-                </div>
-                    <label for="connection_id">Chat ID:</label>
-                    <input type="text" id="connection_id" value="1">
-                <div>
-                    <label for="advanced">Advanced user:</label>
-                    <input type="checkbox" id="advanced" name="advanced" value="True">
-                </div>
-                <div>
-                    <label for="connection_id">Authentication token</label>
-                    <input type="text" id="token">
-                </div>
-            </div>
-            <div class="button-box">
-                <button id="connect" class="connect">Connect</button>
-                <button id="close" class="close">Close Connection</button>
-                <button id="reconnect" class="reconnect">Reconnect</button>
-            </div>
+            Mint Agent
         </div>
-        <div id="status" class="status">
-            Disconnected
-        </div>
+
         <div class="chat-messages" id="chatMessages">
         </div>
+
         <form class="chat-input" action="" onsubmit="sendMessage(event)">
-            <input type="text" id="userInput" placeholder="Type a message..." value=""> 
-            <button type="submit" id="submitButton">Send</button>
+            <input type="text" id="userInput" placeholder="Type a message...">
+            <div class="buttons">
+                <button type="submit" id="submitButton" disabled>
+                    ➤
+                </button>
+                <button id="confirm" disabled>
+                    Confirm
+                </button>
+                <button id="decline" disabled>
+                    Decline
+                </button>
+            </div>
         </form>
-        <div class="button-box">
-            <button class="confirm-button" id="confirm">Confirm Tool</button>
-            <button class="decline-button" id="decline">Decline Tool</button>
-        </div>
     </div>
     <script>
         var ws;
@@ -330,9 +368,7 @@
                     // messageElement.classList.add('chat-message', 'ai-debug');
                     // messageElement.textContent = event.data;
                     // chatMessages.appendChild(messageElement);
-                    // if (message.type == "llm_end") {
-                    //     lastAIMessageElement = null;
-                    // }
+
                 } else {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'user-message');
@@ -393,7 +429,6 @@
             addMessageToChat(input.value, 'user-message')
             input.value = ''
             event.preventDefault()
-            addMessageToChat("...", 'ai-message')
         }
         
         function closeWebSocket() {
@@ -434,11 +469,23 @@
             document.getElementById("decline").disabled = true;
         }
 
+        function generateRandomID() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 10; i++) {
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                result += characters[randomIndex];
+            }
+            var id = document.querySelector("#connection_id");
+            id.value = result;
+        }
+
         document.getElementById('connect').addEventListener('click', connectWebSocket);
         document.getElementById('close').addEventListener('click', closeWebSocket);
         document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
         document.getElementById("confirm").addEventListener("click", sendConfirmation)
         document.getElementById("decline").addEventListener("click", sendDecline)
+        document.getElementById("roll-id").addEventListener("click", generateRandomID)
     </script>
 </body>
 </html>

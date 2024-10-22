@@ -4,8 +4,10 @@ from typing import Optional, Type
 from langchain.callbacks.manager import (
     CallbackManagerForToolRun,
 )
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
+
+from mint_agent.tools.MintHCM.BaseTool import tool_response
 
 
 class CalendarInput(BaseModel):
@@ -24,8 +26,8 @@ class CalendarTool(BaseTool):
         self, format: str, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> dict:
         """Use the tool."""
-        tool_response = {
-            "primary_response": date.today().strftime("%Y-%m-%d (%A)"),
-            "extra_message": "Test from Calendar Tool",
-        }
-        return tool_response
+        d = date.today().strftime("%Y-%m-%d (%A)")
+        response = tool_response(
+            primary_response=d, extra_message="Test from Calendar Tool"
+        )
+        return response

@@ -77,6 +77,9 @@ class AgentToolNode(ToolNode):
             tool_response = json.loads(tool_message.content)
             primary_response = tool_response["primary_response"]
             extra_message = tool_response.get("extra_message", "")
+            print(
+                f"--------------\nExtra message from tool call: {extra_message}\n--------------"
+            )
             tool_message.content = cast(
                 Union[str, list], msg_content_output(primary_response)
             )

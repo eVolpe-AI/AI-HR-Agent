@@ -48,21 +48,6 @@ class BaseAgentTool(ABC):
         """
         raise NotImplementedError
 
-    def create_tool_response(
-        self,
-        response: str,
-    ) -> dict:
-        """
-        Method to create a response for a tool.
-
-        Args:
-            response (dict): The response from the tool.
-
-        Returns:
-            dict: The response for the tool.
-        """
-        return response
-
 
 class MintBaseTool(BaseAgentTool):
     """
@@ -103,7 +88,12 @@ class MintBaseTool(BaseAgentTool):
             raise e
 
 
-class ToolResponse:
-    def __init__(self, stdout: str, artifacts: str):
-        self.stdout = stdout
-        self.artifacts = artifacts
+def tool_response(
+    primary_response: any,
+    extra_message: str | None = None,
+) -> dict:
+    response = {
+        "primary_response": primary_response,
+        "extra_message": extra_message,
+    }
+    return response
