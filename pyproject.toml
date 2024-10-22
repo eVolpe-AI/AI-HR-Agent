@@ -1,10 +1,6 @@
 [tool.poetry]
 name = "mint_agent"
 version = "0.1.0"
-description = "AI agent for MintHCM"
-authors = ["Your Name <you@example.com>"]
-license = "TODO"
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
