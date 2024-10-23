@@ -32,7 +32,14 @@ class AgentMint:
     The main agent class that handles the agent's workflow and interactions with the user.
     """
 
-    def __init__(self, user_id: str, mint_user_id:str, chat_id: str, ip_addr: str, is_advanced: bool) -> None:
+    def __init__(
+        self,
+        user_id: str,
+        mint_user_id: str,
+        chat_id: str,
+        ip_addr: str,
+        is_advanced: bool,
+    ) -> None:
         tools = ToolController.get_tools()
         self.state = None
         self.chat_id = chat_id
@@ -44,7 +51,9 @@ class AgentMint:
         self.app = compile_workflow(self.graph, user_id)
 
         self.usage_tracker = MongoDBUsageTracker(
-            AsyncIOMotorClient(os.getenv("MONGO_URI")), os.getenv("DB_NAME"), user_id
+            AsyncIOMotorClient(os.getenv("MONGO_URI")),
+            os.getenv("MONGO_DB_NAME"),
+            user_id,
         )
 
         self.history_config = HistoryManagement(
@@ -63,7 +72,6 @@ class AgentMint:
 
         self.agent_logger = AgentLogger(self.user_id, self.chat_id, self.ip_addr)
 
-
     async def set_state(self) -> None:
         """
         Set the agent's state based on the previous state stored in the database.
@@ -79,23 +87,21 @@ class AgentMint:
                 safe_tools=ToolController.get_safe_tools(),
                 tool_accept=prev_state.values.get("tool_accept", False),
                 history_config=self.history_config,
-                conversation_summary= prev_state.values.get(
+                conversation_summary=prev_state.values.get(
                     "conversation_summary", None
                 ),
                 system_prompt=prev_state.values.get("system_prompt", None),
                 history_token_count=prev_state.values.get("history_token_count", 0),
-                    )
+            )
         except Exception as e:
             logger.error(f"Failed to get previous state: {e}")
             raise
-
 
     def visualize_graph(self) -> None:
         """
         Visualize the agent's graph schema and save it as a PNG file.
         """
         self.app.get_graph().draw_mermaid_png(output_file_path="utils/graph_schema.png")
-
 
     async def invoke(self, message: UserMessage) -> AsyncGenerator[str, None]:
         """
@@ -106,7 +112,7 @@ class AgentMint:
 
         Yields:
             str: The JSON representation of the agent message to be sent to the user.
-        
+
         Raises:
             Exception: If an error occurs during the agent's execution
         """
@@ -116,7 +122,7 @@ class AgentMint:
         try:
             self.handle_message(message)
             yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
-            
+
             async for event in self.app.astream_events(
                 input=self.state, version="v2", config=self.config
             ):
@@ -127,11 +133,10 @@ class AgentMint:
         except Exception as e:
             await self.set_state()
             self.agent_logger.end_error(self.state, e)
-            raise 
-        
+            raise
+
         await self.set_state()
         self.agent_logger.end(self.state)
-
 
     def handle_message(self, message: UserMessage) -> None:
         """
@@ -157,17 +162,16 @@ class AgentMint:
                 self.state["messages"].append(
                     ToolMessage(
                         tool_call_id=tool_call_message["id"],
-                        content="Wywołanie narzędzia odrzucone przez użytkownika.",
+                        content="Tool call rejected by the user.",
                     )
                 )
                 self.state["messages"].append(
                     HumanMessage(
-                        content=f"Odrzuciłem użycie narzędzia {tool_call_message["name"]} z powodu: {message.content if message.content else 'brak powodu'}"
+                        content=f"I rejected the use of the tool {tool_call_message["name"]} {f"because: {message.content}." if message.content else "and i don't want to provide a reason."}"
                     )
                 )
             case _:
                 raise ValueError(f"Unknown message type: {message.type}")
-
 
     async def handle_graph_event(self, event: dict) -> AgentMessage | None:
         """
@@ -200,16 +204,20 @@ class AgentMint:
                 output = AgentMessage(type=AgentMessageType.LLM_START)
             case "on_chat_model_end":
                 output = AgentMessage(type=AgentMessageType.LLM_END)
-                returns_usage_data = ProviderConfig.get_param(self.state["provider"], "returns_usage_data")
+                returns_usage_data = ProviderConfig.get_param(
+                    self.state["provider"], "returns_usage_data"
+                )
                 self.state["messages"].append(event["data"]["output"])
-                
+
                 if returns_usage_data:
                     usage_data = {
                         "tokens": event["data"]["output"].usage_metadata,
                         "timestamp": datetime.now(),
                     }
                     await self.usage_tracker.push_token_usage(usage_data)
-                    self.state["history_token_count"] = event["data"]["output"].usage_metadata["input_tokens"]
+                    self.state["history_token_count"] = event["data"][
+                        "output"
+                    ].usage_metadata["input_tokens"]
                     self.agent_logger.set_usage_data(usage_data)
             case "on_tool_start":
                 if self.is_advanced:

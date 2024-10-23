@@ -10,7 +10,7 @@ def generate_credentials():
         load_dotenv()
 
         db_uri = os.getenv("MONGO_URI")
-        db_name = os.getenv("DB_NAME")
+        db_name = os.getenv("MONGO_DB_NAME")
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         credential_path = os.path.join(current_dir, "../credentials.json")
@@ -26,7 +26,7 @@ def generate_credentials():
             collection_name = user["_id"]
             collection = db[collection_name]
 
-            query = {"_id": user["_id"], "auth_token": user["auth_token"]}
+            query = {"_id": user["_id"], "auth_token": user["mint_user_id"]}
 
             credentials_to_save = (
                 user["user_credentials"] if "user_credentials" in user else {}

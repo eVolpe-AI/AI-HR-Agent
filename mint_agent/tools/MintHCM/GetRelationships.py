@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
-from langchain_core.tools import BaseTool, ToolException
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
@@ -29,7 +29,7 @@ class MintGetRelTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         try:
             suitecrm = self.get_connection(config)
-            result = suitecrm.Meetings.get_relationship(record_id, related_module)
+            suitecrm.Meetings.get_relationship(record_id, related_module)
             return {"status": "success"}
         except Exception as e:
             return {"status": "error", "message": str(e)}

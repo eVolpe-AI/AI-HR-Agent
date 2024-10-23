@@ -1,4 +1,3 @@
-import traceback
 from typing import Any, Dict, List, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
@@ -7,7 +6,6 @@ from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
-from mint_agent.tools.MintHCM.CreateRelationships import MintCreateRelTool
 
 
 class MintCreateMeetingInput(BaseModel):
@@ -43,7 +41,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     description: str = """
     Tool to create new meetings with attendees in MintHCM modules.
     Dont use this tool without knowing the fields available in the module.
-    Use CalendarTool to get current_date and derrive from it propoer date_start and date_end for the meeting if asked to create meeting for today, tommorow etc.
+    Use CalendarTool to get current_date and derive from it proper date_start and date_end for the meeting if asked to create meeting for today, tomorrow etc.
     Use MintGetModuleFieldsTool to get list of fields available in the module.
     """
     args_schema: Type[BaseModel] = MintCreateMeetingInput
@@ -79,7 +77,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             if candidates:
                 add_relationships("candidates", candidates)
 
-            return "W module 'Meetings' utworzono nowe spotkanie."
+            return "New meeting created in module 'Meetings'."
 
         except Exception as e:
             raise ToolException(f"Error: {e}")

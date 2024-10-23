@@ -13,7 +13,7 @@ class CredentialManager:
 
     def __init__(self):
         db_uri = os.getenv("MONGO_URI")
-        db_name = os.getenv("DB_NAME")
+        db_name = os.getenv("MONGO_DB_NAME")
         self.client = MongoClient(db_uri)
         self.db = self.client[db_name]
 
@@ -29,7 +29,7 @@ class CredentialManager:
             bool: True if the user is authenticated, False otherwise.
         """
         collection = self.db[user_id]
-        user = collection.find_one({"_id": user_id, "auth_token": token})
+        user = collection.find_one({"_id": user_id, "mint_user_id": token})
         return bool(user)
 
     def get_system_credentials(

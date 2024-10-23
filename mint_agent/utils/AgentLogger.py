@@ -9,7 +9,7 @@ from loguru import logger
 
 from mint_agent.agent_state.state import GraphState
 
-INDENT = "    "
+INDENT = "   "
 
 load_dotenv()
 log_level = os.getenv("LOG_LEVEL")
@@ -96,7 +96,7 @@ class AgentLogger:
 
     def _format_history_config(self, history_config: dict) -> str:
         return "\n" + "\n".join(
-            f"{INDENT * 6}{key}: {value}" for key, value in history_config.items()
+            f"{INDENT * 3}{key}: {value}" for key, value in history_config.items()
         )
 
     def _format_messages(self, messages: list) -> str:
@@ -117,13 +117,12 @@ class AgentLogger:
         if self.usage_data:
             return (
                 "\n"
-                f"{INDENT * 6}input tokens: {self.usage_data['tokens']['input_tokens']}\n"
-                f"{INDENT * 6}output tokens: {self.usage_data['tokens']['output_tokens']}"
+                f"{INDENT * 3}input tokens: {self.usage_data['tokens']['input_tokens']}\n"
+                f"{INDENT * 3}output tokens: {self.usage_data['tokens']['output_tokens']}"
             )
         return ""
 
     def _format_state(self, state: dict) -> str:
-
         history_config_string = self._format_history_config(state["history_config"])
 
         messages_string = self._format_messages(state["messages"])

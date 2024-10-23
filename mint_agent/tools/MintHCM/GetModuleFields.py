@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
@@ -6,7 +6,7 @@ from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
-from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintGetModuleFieldsInput(BaseModel):

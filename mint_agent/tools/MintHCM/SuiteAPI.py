@@ -14,11 +14,9 @@ from requests_oauthlib import OAuth2Session
 
 
 class SuiteCRM:
-
     def __init__(
         self, client_id: str, client_secret: str, url: str, logout_on_exit: bool = False
     ):
-
         self.baseurl = url
         self._client_id = client_id
         self._client_secret = client_secret
@@ -123,9 +121,6 @@ class SuiteCRM:
 
         :return: (dictionary) Data
         """
-        print(f"URL: {url}")  # TODO remove
-        print(f"Method: {method}")  # TODO remove
-        print(f"Parameters: {parameters}")  # TODO remove
 
         url = quote(url, safe="/:?=&")
         data = json.dumps({"data": parameters})
@@ -165,7 +160,6 @@ class SuiteCRM:
         if data.status_code == 400 and "Database failure." in data.content.decode():
             raise Exception(data.content.decode())
 
-        # print(data.content) # TODO remove
         return json.loads(data.content)
 
     def get_modules(self) -> list:
@@ -179,7 +173,6 @@ class SuiteCRM:
 
 
 class Module:
-
     def __init__(self, suitecrm, module_name):
         self.module_name = module_name
         self.suitecrm = suitecrm

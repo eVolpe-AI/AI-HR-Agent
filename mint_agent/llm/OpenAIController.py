@@ -1,4 +1,3 @@
-# from openai import OpenAI
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -10,7 +9,7 @@ load_dotenv()
 
 
 class OpenAIController(BaseController):
-    """Class to conroll conversation with OpenAI"""
+    """Class to control conversation with OpenAI models"""
 
     DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
     DEFAULT_MAX_TOKENS = 1000

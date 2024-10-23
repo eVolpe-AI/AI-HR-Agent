@@ -230,7 +230,7 @@
         <div class="chat-header">
             <div class="input-box">
                 <div>
-                    <label for="username">Username:</label>
+                    <label for="username">User ID:</label>
                     <input type="text" id="username" value="admin">
                 </div>
                 <div>
@@ -244,7 +244,7 @@
             </div>
             <div class="token_box">
                 <label for="connection_id">Authentication token</label>
-                <input type="text" id="token" value="admin">
+                <input type="text" id="token">
             </div>
             <div class="button-box">
                 <button id="connect" class="connect">Connect</button>
@@ -256,7 +256,7 @@
         <div class="chat-messages" id="chatMessages">
         </div>
         <form class="chat-input" action="" onsubmit="sendMessage(event)">
-            <input type="text" id="userInput" placeholder="Type a message..." value="Jak wygląda moja dostępność w tym tygodniu?"> 
+            <input type="text" id="userInput" placeholder="Type a message..." value=""> 
             <button type="submit" id="submitButton">Send</button>
         </form>
         <div class="button-box">

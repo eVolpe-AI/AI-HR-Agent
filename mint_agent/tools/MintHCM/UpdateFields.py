@@ -1,5 +1,4 @@
-import traceback
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
@@ -43,7 +42,7 @@ class MintUpdateFieldsTool(BaseTool, MintBaseTool):
             url = f"{self.api_url}/module"
             data = {"type": module_name, "id": id, "attributes": attributes}
             response = suitecrm.request(url, "patch", parameters=data)
-            return "Zaktualizowano pole w module " + module_name + "o ID " + id
+            return "Updated field in module " + module_name + " with ID " + id
 
         except Exception as e:
             raise ToolException(f"Error: {e}")

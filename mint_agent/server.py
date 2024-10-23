@@ -18,10 +18,6 @@ from mint_agent.utils.errors import ServerError
 
 configure_logging()
 
-# os.environ["LANGCHAIN_TRACING_V2"] = "true"
-# os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-# os.environ["LANGCHAIN_PROJECT"] = "new-llm-interaction"
-
 http_chat = FastAPI()
 api = FastAPI()
 credential_manager = CredentialManager()
@@ -145,7 +141,7 @@ async def websocket_endpoint(
     try:
         agent_db = AgentDatabase(
             AsyncIOMotorClient(os.getenv("MONGO_URI")),
-            os.getenv("DB_NAME"),
+            os.getenv("MONGO_DB_NAME"),
             user_id,
         )
         user_data = await agent_db.get(["mint_user_id"])

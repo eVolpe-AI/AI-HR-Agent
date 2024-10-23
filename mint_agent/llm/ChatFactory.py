@@ -1,18 +1,9 @@
 from typing import Optional
 
-# from chat.ChatGptAzureController import ChatGptAzureController
-# from llm.Qra13bController import Qra13bController
-# from chat.GroqController import GroqController
 from mint_agent.llm.AnthropicController import AnthropicController
-
-# from llm.MixtralController import MixtralController
-# from llm.MistralController import MistralController
 from mint_agent.llm.OpenAIController import OpenAIController
 
-# from chat.AnthropicBedrockController import AnthropicBedrockController
 
-
-# TODO move more responsibility to each provider controller
 class ProviderConfig:
     """
     Configuration class for different providers.
@@ -49,36 +40,21 @@ class ProviderConfig:
 
 
 class ChatFactory:
-
     model_controllers = {
-        #'MIXTRAL': MixtralController,
-        #'MISTRAL': MistralController,
         "ANTHROPIC": AnthropicController,
-        # "ANTHROPIC_AWS": AnthropicBedrockController,
         "OPENAI": OpenAIController,
-        #'CHATGPT_AZURE' : ChatGptAzureController,
-        #'GROQ': GroqController,
     }
 
     models = {
-        #'MIXTRAL': MixtralController,
-        #'MISTRAL': MistralController,
         "ANTHROPIC": [
             "claude-3-haiku-20240307",
             # "claude-3-sonnet-20240229",
             # "claude-3-opus-20240229",
         ],
-        # "ANTHROPIC_AWS": [
-        #     "claude-3-haiku-20240307-v1:0",
-        #     "claude-3-sonnet-20240229-v1:0",
-        #     "claude-3-opus-20240229-v1:0",
-        # ],
         "OPENAI": [
             "gpt-4o-mini-2024-07-18"
             # "gpt4o",
         ],
-        #'CHATGPT_AZURE' : ChatGptAzureController,
-        #'GROQ': GroqController,
     }
 
     @staticmethod
