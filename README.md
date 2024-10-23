@@ -9,8 +9,8 @@ Our agent comes equipped with tools to help you perform a variety of tasks, incl
 * 📝 **Creating records** - From scheduling meetings or calls to adding new candidates and more.
 * 🔄 **Updating existing records** - Easily modify existing entries, like adding participants to existing meetings
 
-### Human oversight for important actions
-A human-in-the-loop mechanism allows for human oversight of tool usage. This means you can approve or decline the agent's actions before they're executed - giving you control while still benefiting from the automation.
+### Human supervision for important actions
+A human in-the-loop mechanism allows for the user to oversee bot's tool usage. This means you can approve or decline the agent's actions before they're executed - giving you control while still benefiting from the automation.
 
 ## Limitations
 
@@ -86,7 +86,7 @@ At the moment, there are 4 types of message history management available for LLM
 
 1. Install Poetry following the <a href="https://python-poetry.org/docs/#installation" target="_blank">installation guide</a>.
 
-2. Prepare mongoDB database server
+2. Prepare mongoDB database server. Refer to the <a href="https://www.mongodb.com/docs/manual/installation/" target="_blank">MongoDB installation guide</a> for instructions.
 
 3. Install all dependencies:
     ```
