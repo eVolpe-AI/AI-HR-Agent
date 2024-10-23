@@ -14,7 +14,7 @@ async def llm_call(state):
     tools = ToolController.get_tools()
 
     if conversation_summary is not None:
-        system_prompt = f"{state["system_prompt"]} This is summary of our previous conversation: {conversation_summary}"
+        system_prompt = f"{state["system_prompt"]} This is summary of our conversation so far: {conversation_summary}"
     else:
         system_prompt = state["system_prompt"]
 
