@@ -26,12 +26,12 @@ class PromptController:
 
     @staticmethod
     def get_simple_prompt() -> str:
-        language = os.getenv("LLM_LANGUAGE", "english")
+        language = os.getenv("LLM_ANSWER_LANGUAGE", "english")
         return PromptController.simple.format(language=language)
 
     @staticmethod
     def get_default_prompt(username: str) -> str:
-        language = os.getenv("LLM_LANGUAGE", "english")
+        language = os.getenv("LLM_ANSWER_LANGUAGE", "english")
         return PromptController.default.format(username=username, language=language)
 
     @staticmethod
