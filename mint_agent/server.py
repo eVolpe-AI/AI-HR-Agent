@@ -155,6 +155,7 @@ async def websocket_endpoint(
         )
         while True:
             incoming_message = await websocket.receive_json()
+            print(f"Incoming message on server: {incoming_message}")
             user_input = UserMessage(incoming_message)
             message_type = user_input.to_json()["type"]
             match message_type:

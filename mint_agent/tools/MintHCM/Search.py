@@ -113,7 +113,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
             if "filters" in filters_array:
                 filter_list_filters = filters_array["filters"]
 
-                print(f"filter_list_filters: {filter_list_filters}")
+                # print(f"filter_list_filters: {filter_list_filters}")
                 #    filter_str = ""
                 # for f in filter_list_filters:
                 #    print(f'fff: {f}')

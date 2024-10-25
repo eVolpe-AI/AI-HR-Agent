@@ -289,6 +289,9 @@
         .decline-message {
             border: 1px solid #f44336;
             color: #f44336;
+            align-self: flex-end;
+            text-align: right;
+            border-bottom-right-radius: 0;
         }
     </style>
 </head>
@@ -359,7 +362,10 @@
             document.getElementById("submitButton").disabled = true;
             document.getElementById("close").disabled = true;   
             document.getElementById("reconnect").disabled = true;
+            generateRandomID();
         });
+        
+        
 
         function connectWebSocket() {
             var chat_id = document.querySelector("#connection_id").value;
@@ -412,9 +418,19 @@
                     } else if (message.type === "tool_start") {
                         var messageElement = document.createElement('div');
                         messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
-                        messageElement.textContent = "Tool use: " + message.tool_name + ", input: " + message.tool_input;
+                        messageElement.textContent = "Tool use: " + message.tool_name;
+                        if (!Object.hasOwn(JSON.parse(message.tool_input.replace(/'/g, '"')), "config")) {
+                            messageElement.textContent += ", input: " + message.tool_input;
+                        }
                         chatMessages.appendChild(messageElement);
                     } 
+                } else if (message.type === "link") {
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'ai-message');
+                    messageElement.innerHTML = `
+                        <a href="${message.content}" target="_blank">${message.content}</a>
+                    `;
+                    chatMessages.appendChild(messageElement);
                 } else {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'user-message');
@@ -506,8 +522,9 @@
                 type: "tool_reject",
                 content: input.value
             }
+            console.log(message)
             input.value = ''
-            addMessageToChat("Tool Declined. " + message.content, 'user-message decline-message')
+            addMessageToChat("Tool Declined. " + message.content, 'decline-message')
             ws.send(JSON.stringify(message))
 
             document.getElementById("submitButton").disabled = false;
