@@ -42,7 +42,6 @@ class AvailabilityTool(BaseTool):
         modules: list[ModuleType],
     ) -> str:
         """Use the tool."""
-
         try:
             connection = mysql.connector.connect(
                 host=os.environ.get("MINTDB_URI"),
@@ -53,60 +52,53 @@ class AvailabilityTool(BaseTool):
             )
         except Error:
             return tool_response(
-                "Couldn't connect to the database. can't get the availability"
+                "Couldn't connect to the database. Can't get the availability"
             )
 
-        meetings, calls = None, None
-        mint_user_id = config.get("configurable", {}).get("mint_user_id")
+        meetings_output, calls_output = [], []  # Initialize outputs as empty lists
 
-        start_date_with_time = start_date + " 00:00:00"
-        end_date_with_time = end_date + " 23:59:59"
+        mint_user_id = config.get("configurable", {}).get("mint_user_id")
+        start_date_with_time = f"{start_date} 00:00:00"
+        end_date_with_time = f"{end_date} 23:59:59"
 
         try:
             cursor = connection.cursor()
             if "meetings" in modules:
                 cursor.execute(
                     """SELECT name, date_start, date_end 
-                        FROM meetings 
-                        WHERE id IN (SELECT meeting_id FROM meetings_users where user_id = %s) 
-                        AND date_start >= %s
-                        AND date_end <= %s""",
+                    FROM meetings 
+                    WHERE id IN (SELECT meeting_id FROM meetings_users WHERE user_id = %s) 
+                    AND date_start >= %s
+                    AND date_end <= %s""",
                     (mint_user_id, start_date_with_time, end_date_with_time),
                 )
-                meetings = cursor.fetchall()
+                meetings_output = [
+                    f"{m[0]}: {m[1].strftime('%Y-%m-%d %H:%M')} - {m[2].strftime('%Y-%m-%d %H:%M')}"
+                    for m in cursor.fetchall()
+                ]
 
             if "calls" in modules:
                 cursor.execute(
                     """SELECT name, duration_hours, duration_minutes, date_start, date_end 
-                        FROM calls 
-                        WHERE id IN (SELECT call_id FROM calls_users WHERE user_id = %s)
-                        AND date_start >= %s
-                        AND date_end <= %s""",
+                    FROM calls 
+                    WHERE id IN (SELECT call_id FROM calls_users WHERE user_id = %s)
+                    AND date_start >= %s
+                    AND date_end <= %s""",
                     (mint_user_id, start_date_with_time, end_date_with_time),
                 )
-                calls = cursor.fetchall()
+                calls_output = [
+                    f"{c[0]}: {c[3].strftime('%Y-%m-%d %H:%M')} - {c[4].strftime('%Y-%m-%d %H:%M')}"
+                    for c in cursor.fetchall()
+                ]
             cursor.close()
         except Error as e:
             return tool_response(f"Error while fetching data from database: {e}")
 
-        if not meetings and not calls:
-            return tool_response("No meetings or calls found in the given period")
-
-        meetings_output = []
-        for meeting in meetings:
-            meetings_output.append(
-                f"{meeting[0]}: {meeting[1].strftime('%Y-%m-%d %H:%M')} - {meeting[2].strftime('%Y-%m-%d %H:%M')}"
-            )
-
-        calls_output = []
-        for call in calls:
-            calls_output.append(
-                f"{call[0]}: {call[3].strftime('%Y-%m-%d %H:%M')} - {call[4].strftime('%Y-%m-%d %H:%M')}"
-            )
-
-        if not meetings:
-            return tool_response(f"Calls: {calls_output}")
-        if not calls:
-            return tool_response(f"Meetings: {meetings_output}")
-
-        return tool_response(f"Meetings: {meetings_output}. Calls: {calls_output}.")
+        if meetings_output and calls_output:
+            return tool_response(f"Meetings: {meetings_output}. Calls: {calls_output}.")
+        elif meetings_output:
+            return tool_response(f"Meetings: {meetings_output}.")
+        elif calls_output:
+            return tool_response(f"Calls: {calls_output}.")
+        else:
+            return tool_response("No records found")

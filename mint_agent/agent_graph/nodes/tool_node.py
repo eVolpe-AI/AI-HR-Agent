@@ -72,15 +72,13 @@ class AgentToolNode(ToolNode):
                 input, config
             )
             tool_response = json.loads(tool_message.content)
-            primary_response = tool_response["primary_response"]
-            extra_message = tool_response.get("extra_message", None)
+            response = tool_response["response"]
+            extra_data = tool_response.get("extra_data", None)
 
-            if extra_message is not None:
-                await adispatch_custom_event("tool_additional_message", extra_message)
+            if extra_data is not None:
+                await adispatch_custom_event("tool_additional_message", extra_data)
 
-            tool_message.content = cast(
-                Union[str, list], msg_content_output(primary_response)
-            )
+            tool_message.content = cast(Union[str, list], msg_content_output(response))
             return tool_message
         except Exception as e:
             if not self.handle_tool_errors:

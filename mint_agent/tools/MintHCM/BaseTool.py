@@ -89,11 +89,11 @@ class MintBaseTool(BaseAgentTool):
 
 
 def tool_response(
-    primary_response: any,
-    extra_message: str | None = None,
+    response: any,
+    extra_data: any = None,
 ) -> dict:
     response = {
-        "primary_response": primary_response,
-        "extra_message": extra_message,
+        "response": response,
+        "extra_data": extra_data,
     }
     return response

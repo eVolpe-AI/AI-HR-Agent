@@ -37,4 +37,4 @@ class MintDeleteRelTool(BaseTool, MintBaseTool):
             )
             return tool_response({"status": "success", "result": result})
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return tool_response({"status": "error", "message": str(e)})

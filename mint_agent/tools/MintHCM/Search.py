@@ -64,7 +64,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         try:
             module_names_tool = MintGetModuleNamesTool()
-            module_names = module_names_tool._run(config=config)
+            module_names = module_names_tool._run(config=config)["response"]
 
             if module_name not in module_names:
                 raise ToolException(
@@ -73,7 +73,9 @@ class MintSearchTool(BaseTool, MintBaseTool):
 
             module_fields_tool = MintGetModuleFieldsTool()
 
-            module_fields = module_fields_tool._run(module_name, config=config)
+            module_fields = module_fields_tool._run(module_name, config=config)[
+                "response"
+            ]
             # we need to check if the fields provided in the fields argument are in the module_fields
             # Example module_fields:
             # {'fields': {'id': {'dbType': 'id'}, 'name': {'dbType': 'name'}, 'date_entered': {'dbType': 'datetime'}}

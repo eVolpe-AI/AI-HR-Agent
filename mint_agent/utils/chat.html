@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
     <title>Mint Agent Chat</title>
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Montserrat';
             margin: 0;
             display: flex;
             height: 100vh;
@@ -156,6 +157,11 @@
             border-bottom-left-radius: 0;
         }
 
+        .ai-message a {
+            color: wheat;
+            text-decoration: underline;
+        }
+
         .chat-input {
             display: flex;
             padding: 15px;
@@ -265,15 +271,16 @@
         }
 
         #roll-id {
-            font-size: x-large;
-            padding: 1px;
+            font-size: xx-large;
             background-color: #31333F;
-            border: 1px solid #555;;
+            border: none;
+            padding: 0;
+            display: inline;
         }
 
         .tool-start {
-            color: #a937b8ae;
-            border: 1px solid #a937b8ae;
+            color: #bc45ccae;
+            border: 1px solid #bc45ccae;
         }
 
         #clear-button {
@@ -410,20 +417,18 @@
                     messageElement.classList.add('chat-message', 'error');
                     messageElement.textContent = message.content;
                     chatMessages.appendChild(messageElement);
-                } else if (message.type) {
-                    if (message.type === "llm_start") {
+                } else if (message.type === "llm_start") {
                         aiThinking = null;
-                    } else if (message.type === "llm_end") {
+                } else if (message.type === "llm_end") {
                         lastAIMessageElement = null;
-                    } else if (message.type === "tool_start") {
+                } else if (message.type === "tool_start") {
                         var messageElement = document.createElement('div');
                         messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
                         messageElement.textContent = "Tool use: " + message.tool_name;
-                        if (!Object.hasOwn(JSON.parse(message.tool_input.replace(/'/g, '"')), "config")) {
+                        if (!message.tool_input.includes("{'config':")) {
                             messageElement.textContent += ", input: " + message.tool_input;
                         }
-                        chatMessages.appendChild(messageElement);
-                    } 
+                        chatMessages.appendChild(messageElement); 
                 } else if (message.type === "link") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-message');
@@ -431,12 +436,13 @@
                         <a href="${message.content}" target="_blank">${message.content}</a>
                     `;
                     chatMessages.appendChild(messageElement);
-                } else {
-                    var messageElement = document.createElement('div');
-                    messageElement.classList.add('chat-message', 'user-message');
-                    messageElement.textContent = event.data;
-                    chatMessages.appendChild(messageElement);
                 }
+                // } else {
+                //     var messageElement = document.createElement('div');
+                //     messageElement.classList.add('chat-message', 'user-message');
+                //     messageElement.textContent = event.data;
+                //     chatMessages.appendChild(messageElement);
+                // }
 
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             };
