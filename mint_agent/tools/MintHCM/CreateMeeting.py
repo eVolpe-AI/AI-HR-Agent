@@ -43,7 +43,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     Tool to create new meetings with attendees in MintHCM modules.
     Dont use this tool without knowing the fields available in the module.
     Use CalendarTool to get current_date and derive from it proper date_start and date_end for the meeting if asked to create meeting for today, tomorrow etc.
-    Use MintGetModuleFieldsTool to get list of fields available in the module. Return to the user the link to the created meeting.
+    Use MintGetModuleFieldsTool to get list of fields available in the module.
     """
     args_schema: Type[BaseModel] = MintCreateMeetingInput
 
@@ -80,7 +80,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
                 add_relationships("candidates", candidates)
 
             return tool_response(
-                "New meeting created in module 'Meetings'", meeting_url
+                "New meeting created in module 'Meetings'", {"url": meeting_url}
             )
 
         except Exception as e:

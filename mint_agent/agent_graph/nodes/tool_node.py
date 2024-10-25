@@ -44,25 +44,6 @@ class AgentToolNode(ToolNode):
             tools, name=name, tags=tags, handle_tool_errors=handle_tool_errors
         )
 
-    def _run_one(self, call: ToolCall, config: RunnableConfig) -> ToolMessage:
-        if invalid_tool_message := self._validate_tool_call(call):
-            return invalid_tool_message
-
-        try:
-            input = {**call, **{"type": "tool_call"}}
-            tool_message: ToolMessage = self.tools_by_name[call["name"]].invoke(
-                input, config
-            )
-            tool_message.content = cast(
-                Union[str, list], msg_content_output(tool_message.content)
-            )
-            return tool_message
-        except Exception as e:
-            if not self.handle_tool_errors:
-                raise e
-            content = TOOL_CALL_ERROR_TEMPLATE.format(error=repr(e))
-            return ToolMessage(content, name=call["name"], tool_call_id=call["id"])
-
     async def _arun_one(self, call: ToolCall, config: RunnableConfig) -> ToolMessage:
         if invalid_tool_message := self._validate_tool_call(call):
             return invalid_tool_message
@@ -74,9 +55,10 @@ class AgentToolNode(ToolNode):
             tool_response = json.loads(tool_message.content)
             response = tool_response["response"]
             extra_data = tool_response.get("extra_data", None)
-
-            if extra_data is not None:
-                await adispatch_custom_event("tool_additional_message", extra_data)
+            print(f"Extra data: {extra_data}, type: {type(extra_data)}")
+            if extra_data:
+                if extra_data["url"]:
+                    await adispatch_custom_event("tool_url", extra_data["url"])
 
             tool_message.content = cast(Union[str, list], msg_content_output(response))
             return tool_message

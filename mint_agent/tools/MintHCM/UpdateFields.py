@@ -45,7 +45,8 @@ class MintUpdateFieldsTool(BaseTool, MintBaseTool):
             response = suitecrm.request(url, "patch", parameters=data)
             record_url = suitecrm.get_record_url(module_name, id)
             return tool_response(
-                f"Updated field in module {module_name} with ID {id}", record_url
+                f"Updated field in module {module_name} with ID {id}",
+                {"url": record_url},
             )
 
         except Exception as e:

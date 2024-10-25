@@ -38,7 +38,7 @@ class ToolController:
         "MintGetModuleFieldsTool": MintGetModuleFieldsTool(
             handle_tool_error=_handle_tool_error
         ),
-        "MintSearchTool": MintSearchTool(),
+        "MintSearchTool": MintSearchTool(handle_tool_error=_handle_tool_error),
         "MintCreateRecordTool": MintCreateRecordTool(
             handle_tool_error=_handle_tool_error
         ),

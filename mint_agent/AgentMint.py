@@ -157,7 +157,6 @@ class AgentMint:
             case UserMessageType.TOOL_CONFIRM.value:
                 self.state["tool_accept"] = True
             case UserMessageType.TOOL_REJECT.value:
-                print("TOOL REJECTION WAS CALLED")
                 tool_call_message = self.state["messages"][-1].tool_calls[0]
                 self.state["tool_accept"] = False
                 self.state["messages"].append(
@@ -239,7 +238,7 @@ class AgentMint:
                         tool_input=event["data"]["params"],
                         tool_name=event["data"]["tool"],
                     )
-                elif event["name"] == "tool_additional_message":
+                elif event["name"] == "tool_url":
                     output = AgentMessage(
                         type=AgentMessageType.LINK,
                         content=event["data"],

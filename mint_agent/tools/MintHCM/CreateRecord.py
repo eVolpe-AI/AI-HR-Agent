@@ -41,7 +41,7 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
             record_url = suitecrm.get_record_url(module_name, response["data"]["id"])
 
             return tool_response(
-                f"New record created for module: {module_name}", record_url
+                f"New record created for module: {module_name}", {"url": record_url}
             )
         except Exception as e:
             raise ToolException(f"Error: {e}")

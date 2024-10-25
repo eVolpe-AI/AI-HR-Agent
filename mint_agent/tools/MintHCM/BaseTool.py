@@ -58,7 +58,6 @@ class MintBaseTool(BaseAgentTool):
     """
 
     api_url = os.getenv("MINT_API_URL")
-    mint_url = os.getenv("MINT_URL")
 
     @property
     def system(self):
