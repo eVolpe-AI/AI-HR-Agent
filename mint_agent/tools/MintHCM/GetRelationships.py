@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 
 
 class MintGetRelInput(BaseModel):
@@ -30,6 +30,6 @@ class MintGetRelTool(BaseTool, MintBaseTool):
         try:
             suitecrm = self.get_connection(config)
             suitecrm.Meetings.get_relationship(record_id, related_module)
-            return {"status": "success"}
+            return tool_response({"status": "success"})
         except Exception as e:
             return {"status": "error", "message": str(e)}

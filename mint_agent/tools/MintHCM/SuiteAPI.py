@@ -160,7 +160,20 @@ class SuiteCRM:
         if data.status_code == 400 and "Database failure." in data.content.decode():
             raise Exception(data.content.decode())
 
+        # print(f"Data from request \n{data}")
+
         return json.loads(data.content)
+
+    def get_record_url(self, module_name: str, record_id: str) -> str:
+        """
+        Gets the url of the record in the module.
+
+        :param record_id: (string) id of the current module record.
+
+        :return: (string) The url of the record.
+        """
+        url = self.baseurl.split("/legacy")[0]
+        return f"{url}/#/modules/{module_name}/DetailView/{record_id}"
 
 
 class Module:
@@ -387,14 +400,3 @@ class Module:
         """
         url = f"/module/{self.module_name}/{record_id}/relationships/{related_module_name.lower()}/{related_bean_id}"
         return self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "delete")
-
-    def get_url(self, record_id: str) -> str:
-        """
-        Gets the url of the record in the module.
-
-        :param record_id: (string) id of the current module record.
-
-        :return: (string) The url of the record.
-        """
-        url = self.suitecrm.baseurl.split("/legacy")[0]
-        return f"{url}/#/modules/{self.module_name}/DetailView/{record_id}"

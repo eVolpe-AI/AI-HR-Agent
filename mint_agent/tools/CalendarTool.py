@@ -26,8 +26,4 @@ class CalendarTool(BaseTool):
         self, format: str, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> dict:
         """Use the tool."""
-        d = date.today().strftime("%Y-%m-%d (%A)")
-        response = tool_response(
-            primary_response=d, extra_message="Test from Calendar Tool"
-        )
-        return response
+        return tool_response(date.today().strftime("%Y-%m-%d (%A)"))

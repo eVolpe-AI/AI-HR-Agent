@@ -1,6 +1,7 @@
 import json
 from typing import Any, Callable, List, Optional, Sequence, Union, cast
 
+from langchain_core.callbacks.manager import adispatch_custom_event
 from langchain_core.messages import ToolCall, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
@@ -23,9 +24,6 @@ def msg_content_output(output: Any) -> str | List[dict]:
         ]
     ):
         return output
-    # Technically a list of strings is also valid message content but it's not currently
-    # well tested that all chat models support this. And for backwards compatibility
-    # we want to make sure we don't break any existing ToolNode usage.
     else:
         try:
             return json.dumps(output, ensure_ascii=False)
@@ -47,7 +45,6 @@ class AgentToolNode(ToolNode):
         )
 
     def _run_one(self, call: ToolCall, config: RunnableConfig) -> ToolMessage:
-        print("AgentToolNode._run_one")
         if invalid_tool_message := self._validate_tool_call(call):
             return invalid_tool_message
 
@@ -76,10 +73,11 @@ class AgentToolNode(ToolNode):
             )
             tool_response = json.loads(tool_message.content)
             primary_response = tool_response["primary_response"]
-            extra_message = tool_response.get("extra_message", "")
-            print(
-                f"--------------\nExtra message from tool call: {extra_message}\n--------------"
-            )
+            extra_message = tool_response.get("extra_message", None)
+
+            if extra_message is not None:
+                await adispatch_custom_event("tool_additional_message", extra_message)
+
             tool_message.content = cast(
                 Union[str, list], msg_content_output(primary_response)
             )

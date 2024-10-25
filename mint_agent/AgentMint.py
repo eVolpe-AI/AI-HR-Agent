@@ -238,5 +238,10 @@ class AgentMint:
                         tool_input=event["data"]["params"],
                         tool_name=event["data"]["tool"],
                     )
+                elif event["name"] == "tool_additional_message":
+                    output = AgentMessage(
+                        type=AgentMessageType.LLM_TEXT,
+                        content=event["data"],
+                    )
 
         return output

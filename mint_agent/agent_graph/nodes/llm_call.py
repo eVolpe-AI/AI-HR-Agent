@@ -13,10 +13,6 @@ async def llm_call(state):
     provider = state["provider"]
     tools = ToolController.get_tools()
 
-    if messages and messages[-1].type == "tool":
-        print("Last message was tool message")
-        print(messages[-1])
-
     if conversation_summary is not None:
         system_prompt = f"{state["system_prompt"]} This is summary of our previous conversation: {conversation_summary}"
     else:

@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
@@ -34,6 +34,6 @@ class MintGetModuleFieldsTool(BaseTool, MintBaseTool):
             suitecrm = self.get_connection(config)
             module = Module(suitecrm, module_name)
             fields = module.fields()
-            return {"fields": fields}
+            return tool_response({"fields": fields})
         except Exception as e:
             raise ToolException(f"Error: {e}")

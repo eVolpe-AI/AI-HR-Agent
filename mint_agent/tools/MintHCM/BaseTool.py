@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
-from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
+from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 
 load_dotenv()
 

@@ -5,7 +5,8 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintCreateDataInput(BaseModel):
@@ -36,7 +37,11 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
             suitecrm = self.get_connection(config)
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
-            suitecrm.request(url, "post", parameters=data)
-            return f"New record created for module: {module_name}"
+            response = suitecrm.request(url, "post", parameters=data)
+            record_url = suitecrm.get_record_url(module_name, response["data"]["id"])
+
+            return tool_response(
+                f"New record created for module: {module_name}", record_url
+            )
         except Exception as e:
             raise ToolException(f"Error: {e}")

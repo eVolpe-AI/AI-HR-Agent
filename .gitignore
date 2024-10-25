@@ -4,3 +4,4 @@
 __pycache__
 AccessToken.txt
 credentials.json
+ruff.toml

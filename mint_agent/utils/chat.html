@@ -165,7 +165,7 @@
 
         .chat-input input {
             flex: 1;
-            padding: 10px 25px;
+            padding: 10px 10px;
             margin: 0 20px;
             border: 1px solid #555;
             border-radius: 5px;
@@ -197,6 +197,13 @@
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
+        .chat-id-box {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
         button:hover {
             filter: brightness(85%);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -213,8 +220,8 @@
         }
 
         input.defaultCheckbox {
-            width: 2em;
-            height: 2em;
+            width: 1.5em;
+            height: 1.5em;
         }
 
         .ai-tool {
@@ -235,18 +242,53 @@
             }
         }
 
-        .confirm {
+        #confirm {
             background-color: #4caf50;
         }
 
-        .decline {
+        #decline {
             background-color: #f44336;
+        }
+
+        #decline:disabled {
+            background-color: #555;
+        }
+
+        #confirm:disabled {
+            background-color: #555;
         }
 
         .buttons {
             display: flex;
             flex-direction: row;
             gap: 10px;
+        }
+
+        #roll-id {
+            font-size: x-large;
+            padding: 1px;
+            background-color: #31333F;
+            border: 1px solid #555;;
+        }
+
+        .tool-start {
+            color: #a937b8ae;
+            border: 1px solid #a937b8ae;
+        }
+
+        #clear-button {
+            background-color: grey;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .decline-message {
+            border: 1px solid #f44336;
+            color: #f44336;
         }
     </style>
 </head>
@@ -259,12 +301,14 @@
             </div>
             <div class="input-box">
                 <label for="connection_id">Chat ID:</label>
-                <input type="text" id="connection_id" value="1">
-                <button id="roll-id">🔄</button>
+                <div class="chat-id-box">
+                    <input type="text" id="connection_id" value="1">
+                    <button id="roll-id">🔄</button>
+                </div>
             </div>
             <div class="checkbox-box">
                 <label for="advanced">Advanced user:</label>
-                <input type="checkbox" id="advanced" name="advanced" value="True" class="defaultCheckbox">
+                <input type="checkbox" id="advanced" name="advanced" class="defaultCheckbox" checked>
             </div>
             <div class="input-box">
                 <label for="token">Authentication token:</label>
@@ -277,6 +321,9 @@
             <button id="reconnect" class="reconnect" disabled>Reconnect</button>
         </div>
         <div id="status" class="status">Disconnected</div>
+        <button id="clear-button">
+            🧹 Clear Chat
+        </button>
     </div>
 
     <div class="chat-container">
@@ -360,15 +407,14 @@
                 } else if (message.type) {
                     if (message.type === "llm_start") {
                         aiThinking = null;
-                    }
-                    if (message.type === "llm_end") {
+                    } else if (message.type === "llm_end") {
                         lastAIMessageElement = null;
-                    }
-                    // var messageElement = document.createElement('div');
-                    // messageElement.classList.add('chat-message', 'ai-debug');
-                    // messageElement.textContent = event.data;
-                    // chatMessages.appendChild(messageElement);
-
+                    } else if (message.type === "tool_start") {
+                        var messageElement = document.createElement('div');
+                        messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
+                        messageElement.textContent = "Tool use: " + message.tool_name + ", input: " + message.tool_input;
+                        chatMessages.appendChild(messageElement);
+                    } 
                 } else {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'user-message');
@@ -461,7 +507,7 @@
                 content: input.value
             }
             input.value = ''
-            addMessageToChat("Tool Declined: " + message.content, 'user-message')
+            addMessageToChat("Tool Declined. " + message.content, 'user-message decline-message')
             ws.send(JSON.stringify(message))
 
             document.getElementById("submitButton").disabled = false;
@@ -480,12 +526,18 @@
             id.value = result;
         }
 
+        function clearChat() {
+            var chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+        }
+
         document.getElementById('connect').addEventListener('click', connectWebSocket);
         document.getElementById('close').addEventListener('click', closeWebSocket);
         document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
         document.getElementById("confirm").addEventListener("click", sendConfirmation)
         document.getElementById("decline").addEventListener("click", sendDecline)
         document.getElementById("roll-id").addEventListener("click", generateRandomID)
+        document.getElementById("clear-button").addEventListener("click", clearChat)
     </script>
 </body>
 </html>

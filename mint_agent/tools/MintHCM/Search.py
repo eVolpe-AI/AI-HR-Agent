@@ -6,7 +6,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 from mint_agent.tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
 from mint_agent.tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
 from mint_agent.tools.MintHCM.SuiteAPI import Module
@@ -160,6 +160,6 @@ class MintSearchTool(BaseTool, MintBaseTool):
             return_data = []
             for row in data:
                 return_data.append({"id": row["id"], **row["attributes"]})
-            return {"data": return_data}
+            return tool_response({"data": return_data})
         except Exception as e:
             raise ToolException(f"Error: {e}")

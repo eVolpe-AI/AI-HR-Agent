@@ -9,6 +9,8 @@ from langchain_core.runnables.config import RunnableConfig
 from mysql.connector import Error
 from pydantic import BaseModel, Field
 
+from mint_agent.tools.MintHCM.BaseTool import tool_response
+
 load_dotenv()
 
 
@@ -50,7 +52,9 @@ class AvailabilityTool(BaseTool):
                 database=os.environ.get("MINTDB_DATABASE_NAME"),
             )
         except Error:
-            return "Couldn't connect to the database. can't get the availability"
+            return tool_response(
+                "Couldn't connect to the database. can't get the availability"
+            )
 
         meetings, calls = None, None
         mint_user_id = config.get("configurable", {}).get("mint_user_id")
@@ -83,10 +87,10 @@ class AvailabilityTool(BaseTool):
                 calls = cursor.fetchall()
             cursor.close()
         except Error as e:
-            return f"Error while fetching data from database: {e}"
+            return tool_response(f"Error while fetching data from database: {e}")
 
         if not meetings and not calls:
-            return "No meetings or calls found in the given period"
+            return tool_response("No meetings or calls found in the given period")
 
         meetings_output = []
         for meeting in meetings:
@@ -101,8 +105,8 @@ class AvailabilityTool(BaseTool):
             )
 
         if not meetings:
-            return f"Calls: {calls_output}"
+            return tool_response(f"Calls: {calls_output}")
         if not calls:
-            return f"Meetings: {meetings_output}"
+            return tool_response(f"Meetings: {meetings_output}")
 
-        return f"Meetings: {meetings_output}. Calls: {calls_output}."
+        return tool_response(f"Meetings: {meetings_output}. Calls: {calls_output}.")
