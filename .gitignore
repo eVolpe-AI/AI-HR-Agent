@@ -1,0 +1,7 @@
+.vscode
+.env
+.conda
+__pycache__
+AccessToken.txt
+credentials.json
+ruff.toml
