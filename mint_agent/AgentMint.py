@@ -233,15 +233,19 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
-                    tool_name = event["data"]["tool"]
-                    print(
-                        f"tool: {ToolController.available_tools["CalendarTool"].get_request_info()}"
-                    )
+                    desc = prepare_human_readable_description(event["data"])
+
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
-                        tool_input=event["data"]["params"],
+                        tool_input=desc,
                         tool_name=event["data"]["tool"],
                     )
+                # except Exception:
+                #     output = AgentMessage(
+                #         type=AgentMessageType.ACCEPT_REQUEST,
+                #         tool_input={},
+                #         tool_name=event["data"]["tool"],
+                #     )
                 elif event["name"] == "tool_url":
                     output = AgentMessage(
                         type=AgentMessageType.LINK,
@@ -249,3 +253,30 @@ class AgentMint:
                     )
 
         return output
+
+
+def prepare_human_readable_description(tool_data: dict) -> dict:
+    tool_name = tool_data["tool"]
+    human_descriptions = ToolController.available_tools[tool_name].get_tool_human_info()
+    params = tool_data["params"]
+    print_params = {}
+
+    for k, v in params.items():
+        print(f"{k}: {v}")
+        if k == "attributes":
+            for attribute_name, attribute_value in v.items():
+                print_params[human_descriptions[k]["desc"][attribute_name]] = (
+                    attribute_value
+                )
+        elif human_descriptions[k]["type"] == "link":
+            print_params[human_descriptions[k]["desc"]] = ""
+            for link in v:
+                print_params[human_descriptions[k]["desc"]].append(
+                    "<a href='#'>Link</a>"
+                )
+        elif human_descriptions[k]["type"] == "text":
+            print_params[human_descriptions[k]["desc"]] = v
+        else:
+            logger.warning(
+                f"Unknown tool field description type: {human_descriptions[k]['type']}"
+            )

@@ -9,6 +9,12 @@ from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 load_dotenv()
 
 
+class ToolUtils(ABC):
+    @abstractmethod
+    def get_tool_human_info(self) -> dict:
+        pass
+
+
 class BaseAgentTool(ABC):
     """
     Abstract base class for agent tools. This class defines the interface that all agent

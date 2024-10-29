@@ -5,20 +5,24 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, ToolUtils, tool_response
 
 
 class MintCreateMeetingInput(BaseModel):
-    module_name: str = Field(
-        ...,
-        description="Name of the module in Mint in which the record is to be created",
-    )
     attributes: Dict[str, Any] = Field(
         ...,
         description="""
     Record attributes in key-value format, value CAN NOT be a list.
     Example: { 'name': 'Meeting with John', 'date_start': '2022-01-01 12:00:00', 'date_end': '2022-01-01 13:00:00', 'assigned_user_id': '1'}
     """,
+        json_schema_extra={
+            "human_description": {
+                "name": "Meeting name",
+                "date_start": "Start date and time of the meeting",
+                "date_end": "End date and time of the meeting",
+                "assigned_user_id": "User id of the user to whom the meeting is assigned",
+            }
+        },
     )
     attendees: List[str] = Field(
         ...,
@@ -26,6 +30,11 @@ class MintCreateMeetingInput(BaseModel):
     List of ids of attendees to the meeting. Example: ['1', 'f39a04c4-e537-4030-9d5a-6638bb2bb87d']
     If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM.
     """,
+        json_schema_extra={
+            "human_description": "Attendees assigned to meeting",
+            "type": "link",
+            "module": "Users",
+        },
     )
     candidates: List[str] = Field(
         ...,
@@ -33,10 +42,15 @@ class MintCreateMeetingInput(BaseModel):
     List of ids of candidates to the meeting. Example: ['26c2081a-1f55-66f7-7b49-6662ef7ab388','68339282-a9f3-ed1d-7ffe-662f6fadd1a9']
     If you have just first_name and a last_name of the candidate, use MintSearchTool to search for candidate id in MintHCM.
     """,
+        json_schema_extra={
+            "human_description": "Candidates assigned to meeting",
+            "type": "link",
+            "module": "Candidates",
+        },
     )
 
 
-class MintCreateMeetingTool(BaseTool, MintBaseTool):
+class MintCreateMeetingTool(BaseTool, MintBaseTool, ToolUtils):
     name: str = "MintCreateMeetingTool"
     description: str = """
     Tool to create new meetings with attendees in MintHCM modules.
@@ -48,7 +62,6 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
 
     def _run(
         self,
-        module_name: str,
         attributes: Dict[str, Any],
         attendees: List[str],
         candidates: Optional[List[str]],
@@ -56,6 +69,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> Dict[str, Any]:
         try:
+            module_name = "Meetings"
             suitecrm = self.get_connection(config)
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
@@ -84,3 +98,20 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
 
         except Exception as e:
             raise ToolException(f"Error: {e}")
+
+    def get_tool_human_info(self) -> dict:
+        return_dict = {}
+        schema_fields = self.args_schema.__fields__
+        for field in self.args_schema.__fields__:
+            if (
+                schema_fields[field].json_schema_extra
+                and schema_fields[field].json_schema_extra["human_description"]
+            ):
+                return_dict[field] = {
+                    "desc": schema_fields[field].json_schema_extra["human_description"],
+                    "type": schema_fields[field].json_schema_extra.get("type", "text"),
+                }
+            else:
+                return_dict[field] = schema_fields[field].description
+
+        return return_dict

@@ -74,7 +74,7 @@ class ToolController:
     ]
 
     safe_tools = [
-        # "CalendarTool",
+        "CalendarTool",
         "AvailabilityTool",
         "MintGetRelTool",
         "MintGetUsersTool",
