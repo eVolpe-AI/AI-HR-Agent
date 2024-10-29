@@ -55,7 +55,6 @@ class AgentToolNode(ToolNode):
             tool_response = json.loads(tool_message.content)
             response = tool_response["response"]
             extra_data = tool_response.get("extra_data", None)
-            print(f"Extra data: {extra_data}, type: {type(extra_data)}")
             if extra_data:
                 if extra_data["url"]:
                     await adispatch_custom_event("tool_url", extra_data["url"])

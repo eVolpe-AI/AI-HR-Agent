@@ -6,7 +6,6 @@ from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
-from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintCreateMeetingInput(BaseModel):

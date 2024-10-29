@@ -27,3 +27,6 @@ class CalendarTool(BaseTool):
     ) -> dict:
         """Use the tool."""
         return tool_response(date.today().strftime("%Y-%m-%d (%A)"))
+
+    def get_request_info():
+        return {"format": "Date format to be returned"}

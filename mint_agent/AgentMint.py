@@ -233,6 +233,10 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
+                    tool_name = event["data"]["tool"]
+                    print(
+                        f"tool: {ToolController.available_tools["CalendarTool"].get_request_info()}"
+                    )
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
                         tool_input=event["data"]["params"],
