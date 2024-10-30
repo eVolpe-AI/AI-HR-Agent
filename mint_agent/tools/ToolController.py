@@ -46,7 +46,9 @@ class ToolController:
             handle_tool_error=_handle_tool_error
         ),
         "MintGetUsersTool": MintGetUsersTool(handle_tool_error=_handle_tool_error),
-        "UpdateFieldsTool": MintUpdateFieldsTool(handle_tool_error=_handle_tool_error),
+        "MintUpdateFieldsTool": MintUpdateFieldsTool(
+            handle_tool_error=_handle_tool_error
+        ),
         "MintCreateRelTool": MintCreateRelTool(handle_tool_error=_handle_tool_error),
         "MintDeleteRecordTool": MintDeleteRecordTool(
             handle_tool_error=_handle_tool_error
@@ -64,7 +66,7 @@ class ToolController:
         "MintCreateRecordTool",
         "MintCreateMeetingTool",
         "MintGetUsersTool",
-        "UpdateFieldsTool",
+        "MintUpdateFieldsTool",
         "MintCreateRelTool",
         "MintDeleteRecordTool",
         "MintDeleteRelTool",
@@ -74,7 +76,7 @@ class ToolController:
     ]
 
     safe_tools = [
-        "CalendarTool",
+        # "CalendarTool",
         "AvailabilityTool",
         "MintGetRelTool",
         "MintGetUsersTool",

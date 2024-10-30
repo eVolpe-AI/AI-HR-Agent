@@ -156,7 +156,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
                 response = module.get(
                     fields=fields_array, sort=None, operator=operator, deleted="0"
                 )
-            print(f"response: {response}")
+            # print(f"response: {response}")
             data = response
             # copy rows from data to return_data, only the attributes
             return_data = []

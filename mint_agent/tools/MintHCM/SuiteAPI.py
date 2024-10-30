@@ -175,6 +175,11 @@ class SuiteCRM:
         :return: (string) The url of the record.
         """
         url = self.baseurl.split("/legacy")[0]
+        if return_name:
+            return (
+                f"{url}/#/modules/{module_name}/DetailView/{record_id}",
+                str(module_name)[:-1],
+            )
         return f"{url}/#/modules/{module_name}/DetailView/{record_id}"
 
     def get_modules(self) -> list:

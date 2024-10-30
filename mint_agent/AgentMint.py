@@ -234,19 +234,13 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
-                    desc = self.prepare_human_readable_tool_description(event["data"])
+                    desc = self.prepare_tool_description(event["data"])
 
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
                         tool_input=desc,
                         tool_name=event["data"]["tool"],
                     )
-                # except Exception:
-                #     output = AgentMessage(
-                #         type=AgentMessageType.ACCEPT_REQUEST,
-                #         tool_input={},
-                #         tool_name=event["data"]["tool"],
-                #     )
                 elif event["name"] == "tool_url":
                     output = AgentMessage(
                         type=AgentMessageType.LINK,
@@ -255,34 +249,83 @@ class AgentMint:
 
         return output
 
-    def prepare_human_readable_tool_description(self, tool_data: dict) -> dict:
-        suite_conn = MintBaseTool().get_connection(self.config)
+    def prepare_tool_description(self, tool_data: dict) -> dict:
+        """
+        Prepares a human-readable description for a given tool by processing tool data.
+
+        :param tool_data: Dictionary containing tool-specific information.
+        :return: Dictionary of tool descriptions formatted as HTML for readability.
+        """
+
+        suite_connection = MintBaseTool().get_connection(self.config)
         tool_name = tool_data["tool"]
-        human_descriptions = ToolController.available_tools[
+        tool_info_result = ToolController.available_tools[
             tool_name
         ].get_tool_human_info()
-        params = tool_data["params"]
-        print_params = {}
 
-        for k, v in params.items():
-            print(f"{k}: {v}")
-            if k == "attributes":
-                for attribute_name, attribute_value in v.items():
-                    print_params[
-                        human_descriptions[k]["description"][attribute_name]
-                    ] = attribute_value
-            elif human_descriptions[k]["type"] == "link":
-                print_params[human_descriptions[k]["description"]] = ""
-                print("Human Descriptions: ", human_descriptions[k])
-                for link in v:
-                    print_params[human_descriptions[k]["description"]] += (
-                        f"<a href='{suite_conn.get_record_url(human_descriptions[k]["module"], link)}'>Link to record</a> <br>"
-                    )
-            elif human_descriptions[k]["type"] == "text":
-                print_params[human_descriptions[k]["description"]] = v
+        if isinstance(tool_info_result, tuple):
+            tool_info, request_message = tool_info_result
+        else:
+            tool_info, request_message = tool_info_result, None
+
+        params = tool_data["params"]
+        formatted_params = {}
+
+        def format_link(description, value):
+            """Format a single link as HTML."""
+            url, record_name = suite_connection.get_record_url(
+                description["module"], value, True
+            )
+            return f"<a href='{url}' target='_blank'>{record_name}</a>"
+
+        def process_param(description, value):
+            """Process individual parameter based on its type and return formatted HTML."""
+            param_type = description["type"]
+
+            match param_type:
+                case "link":
+                    return format_link(description, value)
+                case "link_array":
+                    formatted_links = []
+                    for link in value:
+                        formatted_links.append(format_link(description, link))
+                    return " ".join(formatted_links)
+                case "text":
+                    return value
+                case _:
+                    logger.warning(f"Unknown parameter description type: {param_type}")
+
+        for param_name, param_value in params.items():
+            print(f"Processing parameter '{param_name}': {param_value}")
+            param_description = tool_info.get(param_name)
+
+            if not param_description:
+                logger.warning(f"Description for parameter '{param_name}' not found.")
+                continue
+
+            if param_description["type"] == "dict":
+                for attr_name, attr_value in param_value.items():
+                    attr_description = param_description["description"].get(attr_name)
+                    if attr_description:
+                        formatted_params[attr_description["description"]] = (
+                            process_param(attr_description, attr_value)
+                        )
+                    else:
+                        logger.warning(
+                            f"Description for attribute '{attr_name}' in parameter '{param_name}' not found."
+                        )
             else:
-                logger.warning(
-                    f"Unknown tool field description type: {human_descriptions[k]['type']}"
+                formatted_params[param_description["description"]] = process_param(
+                    param_description, param_value
                 )
 
-        return print_params
+        html_formatted_description = (
+            f"<strong>{request_message}</strong><br><br>"
+            if request_message
+            else f"<strong>{tool_name} Request</strong><br><br>"
+        )
+
+        for key, val in formatted_params.items():
+            html_formatted_description += f"<b>{key}:</b> {val} <br>"
+
+        return html_formatted_description

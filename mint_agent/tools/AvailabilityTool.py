@@ -102,3 +102,25 @@ class AvailabilityTool(BaseTool):
             return tool_response(f"Calls: {calls_output}.")
         else:
             return tool_response("No records found")
+
+    def get_tool_human_info(self) -> dict:
+        return_dict = {}
+        schema_fields = self.args_schema.__fields__
+        for field in schema_fields:
+            if (
+                schema_fields[field].json_schema_extra
+                and schema_fields[field].json_schema_extra["human_description"]
+            ):
+                return_dict[field] = {
+                    "description": schema_fields[field].json_schema_extra[
+                        "human_description"
+                    ],
+                    "type": schema_fields[field].json_schema_extra.get("type", "text"),
+                    "module": schema_fields[field].json_schema_extra.get(
+                        "module", None
+                    ),
+                }
+            else:
+                return_dict[field] = schema_fields[field].description
+
+        return return_dict

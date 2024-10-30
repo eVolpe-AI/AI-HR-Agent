@@ -4,15 +4,40 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
-from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
+from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
 
 load_dotenv()
 
 
-class ToolUtils(ABC):
-    @abstractmethod
+class ToolUtils:
     def get_tool_human_info(self) -> dict:
-        pass
+        if hasattr(self, "request_message"):
+            request_message = self.request_message
+        else:
+            request_message = None
+            # TODO ADD WARNING
+        return_dict = {}
+        schema_fields = self.args_schema.__fields__
+        for field in schema_fields:
+            if (
+                schema_fields[field].json_schema_extra
+                and schema_fields[field].json_schema_extra["human_description"]
+            ):
+                return_dict[field] = {
+                    "description": schema_fields[field].json_schema_extra[
+                        "human_description"
+                    ],
+                    "type": schema_fields[field].json_schema_extra.get("type", "text"),
+                    "module": schema_fields[field].json_schema_extra.get(
+                        "module", None
+                    ),
+                }
+            if not schema_fields[field].json_schema_extra:
+                pass
+            else:
+                return_dict[field] = schema_fields[field].description
+
+        return return_dict, request_message
 
 
 class BaseAgentTool(ABC):

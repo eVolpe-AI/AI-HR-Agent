@@ -12,6 +12,21 @@
             display: flex;
             height: 100vh;
         }
+        
+        a {
+            color: #2196f3;
+        }
+
+        b {
+            color: rgb(176, 126, 33);
+            font-weight: normal;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #555;
+        }
+        
 
         .sidebar {
             background-color: #31333F;
@@ -300,6 +315,8 @@
             text-align: right;
             border-bottom-right-radius: 0;
         }
+
+
     </style>
 </head>
 <body>
@@ -401,11 +418,7 @@
                 } else if (message.type === "accept_request") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-tool');
-                    messageElement.innerHTML = `
-                        <strong>Tool Request:</strong><br>
-                        <strong>Tool Name:</strong> ${message.tool_name}<br>
-                        <strong>Input:</strong> ${message.tool_input}<br>
-                    `;
+                    messageElement.innerHTML = message.tool_input;
                     chatMessages.appendChild(messageElement);
                     lastAIMessageElement = null; 
 

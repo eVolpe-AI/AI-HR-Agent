@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, ToolUtils, tool_response
 from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
@@ -13,17 +13,31 @@ class MintUpdateDataInput(BaseModel):
     module_name: str = Field(
         ...,
         description="Name of the module in MintHCM system. If you don't know the module, use MintSearchTool to search for module name in MintHCM.",
+        # json_schema_extra={
+        #     "human_description": "Module",
+        #     "type": "text",
+        # },
     )
     id: str = Field(
         ...,
         description="ID number of the record to update. If you don't know id, use MintSearchTool to search for record id in MintHCM.",
+        json_schema_extra={
+            "human_description": "Link to record",
+            "type": "link",
+            "module": "Candidates",  # TODO PASS MODULE NAME HERE
+        },
     )
     attributes: Dict[str, Any] = Field(
-        ..., description="Attributes to update in key-value format"
+        ...,
+        description="Attributes to update in key-value format",
+        json_schema_extra={
+            "human_description": "attributes",
+            "type": "text",
+        },
     )
 
 
-class MintUpdateFieldsTool(BaseTool, MintBaseTool):
+class MintUpdateFieldsTool(BaseTool, MintBaseTool, ToolUtils):
     name: str = "MintUpdateFieldsTool"
     description: str = """Use this tool to update fields in the module based on data received from the user. Use this tool to update value of the field in the module,
     for example, duration or start date. Before using MintUpdateFieldsTool, ensure you have the correct module name and record ID. If not, use MintSearchTool to retrieve them.

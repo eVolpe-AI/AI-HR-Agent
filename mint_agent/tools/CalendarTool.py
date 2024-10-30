@@ -13,7 +13,7 @@ from mint_agent.tools.MintHCM.BaseTool import ToolUtils, tool_response
 class CalendarInput(BaseModel):
     format: str = Field(
         description=" Date format to be returned. Default is YYYY-MM-DD (Day)",
-        json_schema_extra={"human_description": "Date format to be returned."},
+        json_schema_extra={"human_description": "Date format"},
     )
 
 
@@ -28,18 +28,3 @@ class CalendarTool(BaseTool, ToolUtils):
     ) -> dict:
         """Use the tool."""
         return tool_response(date.today().strftime("%Y-%m-%d (%A)"))
-
-    def get_tool_human_info(self) -> dict:
-        return_dict = {}
-        schema_fields = self.args_schema.__fields__
-        for field in self.args_schema.__fields__:
-            if (
-                schema_fields[field].json_schema_extra
-                and schema_fields[field].json_schema_extra["human_description"]
-            ):
-                return_dict[field] = schema_fields[field].json_schema_extra[
-                    "human_description"
-                ]
-            else:
-                return_dict[field] = schema_fields[field].description
-        return return_dict
