@@ -21,7 +21,8 @@ class MintCreateMeetingInput(BaseModel):
                 "date_start": "Start date and time of the meeting",
                 "date_end": "End date and time of the meeting",
                 "assigned_user_id": "User id of the user to whom the meeting is assigned",
-            }
+            },
+            "type": "dict",
         },
     )
     attendees: List[str] = Field(
@@ -108,8 +109,13 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool, ToolUtils):
                 and schema_fields[field].json_schema_extra["human_description"]
             ):
                 return_dict[field] = {
-                    "desc": schema_fields[field].json_schema_extra["human_description"],
+                    "description": schema_fields[field].json_schema_extra[
+                        "human_description"
+                    ],
                     "type": schema_fields[field].json_schema_extra.get("type", "text"),
+                    "module": schema_fields[field].json_schema_extra.get(
+                        "module", None
+                    ),
                 }
             else:
                 return_dict[field] = schema_fields[field].description

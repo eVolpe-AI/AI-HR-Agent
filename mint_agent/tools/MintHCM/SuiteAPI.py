@@ -164,7 +164,9 @@ class SuiteCRM:
 
         return json.loads(data.content)
 
-    def get_record_url(self, module_name: str, record_id: str) -> str:
+    def get_record_url(
+        self, module_name: str, record_id: str, return_name: bool = False
+    ) -> str:
         """
         Gets the url of the record in the module.
 

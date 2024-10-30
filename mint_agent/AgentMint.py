@@ -21,6 +21,7 @@ from mint_agent.agent_state.state import (
 )
 from mint_agent.database.db_utils import MongoDBUsageTracker
 from mint_agent.llm.ChatFactory import ProviderConfig
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
 from mint_agent.tools.ToolController import ToolController
 from mint_agent.utils.AgentLogger import AgentLogger
 
@@ -233,7 +234,7 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
-                    desc = prepare_human_readable_description(event["data"])
+                    desc = self.prepare_human_readable_tool_description(event["data"])
 
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
@@ -254,29 +255,34 @@ class AgentMint:
 
         return output
 
+    def prepare_human_readable_tool_description(self, tool_data: dict) -> dict:
+        suite_conn = MintBaseTool().get_connection(self.config)
+        tool_name = tool_data["tool"]
+        human_descriptions = ToolController.available_tools[
+            tool_name
+        ].get_tool_human_info()
+        params = tool_data["params"]
+        print_params = {}
 
-def prepare_human_readable_description(tool_data: dict) -> dict:
-    tool_name = tool_data["tool"]
-    human_descriptions = ToolController.available_tools[tool_name].get_tool_human_info()
-    params = tool_data["params"]
-    print_params = {}
+        for k, v in params.items():
+            print(f"{k}: {v}")
+            if k == "attributes":
+                for attribute_name, attribute_value in v.items():
+                    print_params[
+                        human_descriptions[k]["description"][attribute_name]
+                    ] = attribute_value
+            elif human_descriptions[k]["type"] == "link":
+                print_params[human_descriptions[k]["description"]] = ""
+                print("Human Descriptions: ", human_descriptions[k])
+                for link in v:
+                    print_params[human_descriptions[k]["description"]] += (
+                        f"<a href='{suite_conn.get_record_url(human_descriptions[k]["module"], link)}'>Link to record</a> <br>"
+                    )
+            elif human_descriptions[k]["type"] == "text":
+                print_params[human_descriptions[k]["description"]] = v
+            else:
+                logger.warning(
+                    f"Unknown tool field description type: {human_descriptions[k]['type']}"
+                )
 
-    for k, v in params.items():
-        print(f"{k}: {v}")
-        if k == "attributes":
-            for attribute_name, attribute_value in v.items():
-                print_params[human_descriptions[k]["desc"][attribute_name]] = (
-                    attribute_value
-                )
-        elif human_descriptions[k]["type"] == "link":
-            print_params[human_descriptions[k]["desc"]] = ""
-            for link in v:
-                print_params[human_descriptions[k]["desc"]].append(
-                    "<a href='#'>Link</a>"
-                )
-        elif human_descriptions[k]["type"] == "text":
-            print_params[human_descriptions[k]["desc"]] = v
-        else:
-            logger.warning(
-                f"Unknown tool field description type: {human_descriptions[k]['type']}"
-            )
+        return print_params
