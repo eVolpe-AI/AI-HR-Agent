@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, ToolUtils, tool_response
 
 
 class MintDeleteRelInput(BaseModel):
@@ -16,7 +16,7 @@ class MintDeleteRelInput(BaseModel):
     related_id: str = Field(..., description="ID of the related record")
 
 
-class MintDeleteRelTool(BaseTool, MintBaseTool):
+class MintDeleteRelTool(BaseTool, MintBaseTool, ToolUtils):
     name: str = "MintDeleteRelTool"
     description: str = """Tool to delete a relationship between records in MintHCM modules. If you don't know ID numbers, you need to get
     both record_id and related_id by using MintSearchTool"""

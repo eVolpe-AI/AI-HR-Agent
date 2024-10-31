@@ -5,7 +5,12 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, ToolUtils, tool_response
+from mint_agent.tools.MintHCM.BaseTool import (
+    MintBaseTool,
+    ToolFieldDescription,
+    ToolUtils,
+    tool_response,
+)
 
 
 class MintCreateMeetingInput(BaseModel):
@@ -17,10 +22,7 @@ class MintCreateMeetingInput(BaseModel):
     """,
         json_schema_extra={
             "human_description": {
-                "name": {
-                    "description": "Meeting name",
-                    "type": "text",
-                },
+                "name": ToolFieldDescription("Meeting name"),
                 "date_start": {
                     "description": "Start time",
                     "type": "text",

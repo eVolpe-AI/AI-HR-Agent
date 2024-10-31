@@ -13,10 +13,10 @@ class MintUpdateDataInput(BaseModel):
     module_name: str = Field(
         ...,
         description="Name of the module in MintHCM system. If you don't know the module, use MintSearchTool to search for module name in MintHCM.",
-        # json_schema_extra={
-        #     "human_description": "Module",
-        #     "type": "text",
-        # },
+        json_schema_extra={
+            "human_description": "Module",
+            "type": "text",
+        },
     )
     id: str = Field(
         ...,

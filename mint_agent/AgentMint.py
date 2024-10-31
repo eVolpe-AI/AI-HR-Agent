@@ -303,6 +303,8 @@ class AgentMint:
                 logger.warning(f"Description for parameter '{param_name}' not found.")
                 continue
 
+            print(f"Param description: {param_description}")
+
             if param_description["type"] == "dict":
                 for attr_name, attr_value in param_value.items():
                     attr_description = param_description["description"].get(attr_name)

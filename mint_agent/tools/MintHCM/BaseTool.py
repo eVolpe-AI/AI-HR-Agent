@@ -9,6 +9,31 @@ from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
 load_dotenv()
 
 
+class ToolFieldDescription:
+    def __init__(
+        self,
+        alert_description,
+        type="text",
+        module=None,
+        show=True,
+        reference_name=None,
+    ):
+        self.alert_description = alert_description
+        self.type = type
+        self.module = module
+        self.show = show
+        self.reference_name = reference_name
+
+    def get_field_info(self):
+        return {
+            "description": self.alert_description,
+            "type": self.type,
+            "module": self.module,
+            "show": self.show,
+            "reference_name": self.reference_name,
+        }
+
+
 class ToolUtils:
     def get_tool_human_info(self) -> dict:
         if hasattr(self, "request_message"):
@@ -16,26 +41,27 @@ class ToolUtils:
         else:
             request_message = None
             # TODO ADD WARNING
+
         return_dict = {}
         schema_fields = self.args_schema.__fields__
+
         for field in schema_fields:
             if (
                 schema_fields[field].json_schema_extra
-                and schema_fields[field].json_schema_extra["human_description"]
+                and schema_fields[field].json_schema_extra["field_description"]
             ):
-                return_dict[field] = {
-                    "description": schema_fields[field].json_schema_extra[
-                        "human_description"
-                    ],
-                    "type": schema_fields[field].json_schema_extra.get("type", "text"),
-                    "module": schema_fields[field].json_schema_extra.get(
-                        "module", None
-                    ),
-                }
-            if not schema_fields[field].json_schema_extra:
-                pass
+                field_description = schema_fields[field].json_schema_extra[
+                    "field_description"
+                ]
+                return_dict[field] = field_description.get_field_info()
             else:
-                return_dict[field] = schema_fields[field].description
+                return_dict[field] = {
+                    "description": schema_fields[field].description,
+                    "type": "text",
+                    "module": None,
+                }
+
+        print(f"return_dict: {return_dict} \n request message: {request_message}")
 
         return return_dict, request_message
 
