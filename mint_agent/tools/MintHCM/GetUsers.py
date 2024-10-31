@@ -11,9 +11,7 @@ from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 
 class MintGetUsersTool(BaseTool, MintBaseTool):
     name: str = "MintGetUsersTool"
-    description: str = (
-        "Tool to retrieve list of users in MintHCM. Use this to get list of users in MintHCM and their details such as id, name, phone numbers, email, adress etc."
-    )
+    description: str = "Tool to retrieve list of users in MintHCM. Use this to get list of users in MintHCM and their details such as id, name, phone numbers, email, adress etc."
 
     def _run(
         self,
@@ -31,36 +29,36 @@ class MintGetUsersTool(BaseTool, MintBaseTool):
                 user_id = user["id"]
                 attributes = user["attributes"]
 
-                name = attributes["full_name"]
+                name = attributes.get("full_name", "")
 
-                phone_home = attributes["phone_home"]
-                phone_mobile = attributes["phone_mobile"]
-                phone_work = attributes["phone_work"]
-                phone_other = attributes["phone_other"]
+                phone_home = attributes.get("phone_home", "")
+                phone_mobile = attributes.get("phone_mobile", "")
+                phone_work = attributes.get("phone_work", "")
+                phone_other = attributes.get("phone_other", "")
 
-                address_street = attributes["address_street"]
-                address_city = attributes["address_city"]
-                address_state = attributes["address_state"]
-                address_country = attributes["address_country"]
-                address_postalcode = attributes["address_postalcode"]
+                address_street = attributes.get("address_street", "")
+                address_city = attributes.get("address_city", "")
+                address_state = attributes.get("address_state", "")
+                address_country = attributes.get("address_country", "")
+                address_postalcode = attributes.get("address_postalcode", "")
 
-                user_type = attributes["UserType"]
-                employee_status = attributes["employee_status"]
+                user_type = attributes.get("UserType", "")
+                employee_status = attributes.get("employee_status", "")
 
-                email_address = attributes["email_addresses_primary"]
+                email_address = attributes.get("email_addresses_primary", "")
 
-                position = attributes["position_name"]
-                reports_to_id = attributes["reports_to_id"]
+                position = attributes.get("position_name", "")
+                reports_to_id = attributes.get("reports_to_id", "")
 
-                user_data = f"""ID: {user_id}, Imie i nazwisko: {name}, ID przełożonego: {reports_to_id}
-                Telefon domowy: {phone_home}, Telefon komórkowy: {phone_mobile}, Telefon służbowy: {phone_work}, Telefon inny: {phone_other}, Email: {email_address},
-                Adres: (ulica: {address_street}, miasto: {address_city}, województwo: {address_state}, kraj: {address_country}, kod pocztowy: {address_postalcode}),
-                Typ użytkownika: {user_type},
-                Status pracownika: {employee_status},
-                Stanowisko: {position},
+                user_data = f"""ID: {user_id}, Name and surname: {name}, id of supervisor: {reports_to_id}
+                Home phone: {phone_home}, Mobile phone: {phone_mobile}, Work phone: {phone_work}, Other phone: {phone_other}, Email: {email_address},
+                Address: (street: {address_street}, city: {address_city}, state: {address_state}, country: {address_country}, postal code: {address_postalcode}),
+                User type: {user_type},
+                Employee status: {employee_status},
+                Position: {position},
                 """
                 users.append(user_data)
             return users
 
         except Exception as e:
-            return f"W trakcie pobierania użytkowników wystąpił błąd: {str(e)}"
+            return f"While trying to get users, an error occurred: {e}"
