@@ -234,11 +234,11 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
-                    desc = self.prepare_tool_description(event["data"])
+                    request_message = self.prepare_tool_request(event["data"])
 
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
-                        tool_input=desc,
+                        tool_input=request_message,
                         tool_name=event["data"]["tool"],
                     )
                 elif event["name"] == "tool_url":
@@ -249,7 +249,7 @@ class AgentMint:
 
         return output
 
-    def prepare_tool_description(self, tool_data: dict) -> dict:
+    def prepare_tool_request(self, tool_data: dict) -> dict:
         """
         Prepares a human-readable description for a given tool by processing tool data.
 
@@ -259,36 +259,47 @@ class AgentMint:
 
         suite_connection = MintBaseTool().get_connection(self.config)
         tool_name = tool_data["tool"]
-        tool_info_result = ToolController.available_tools[
+        tool_fields_info = ToolController.available_tools[
             tool_name
-        ].get_tool_human_info()
+        ].get_tool_fields_info()
 
-        if isinstance(tool_info_result, tuple):
-            tool_info, request_message = tool_info_result
-        else:
-            tool_info, request_message = tool_info_result, None
+        tool_info, request_message = (
+            tool_fields_info
+            if isinstance(tool_fields_info, tuple)
+            else (tool_fields_info, None)
+        )
 
         params = tool_data["params"]
         formatted_params = {}
 
-        def format_link(description, value):
+        def format_link(description, value, number=None):
             """Format a single link as HTML."""
-            url, record_name = suite_connection.get_record_url(
-                description["module"], value, True
+            if description["reference_name"]:
+                module = tool_data["params"][description["reference_name"]]
+            else:
+                module = description["module"]
+            url, record_name = suite_connection.get_record_url(module, value, True)
+
+            print(f"{url} {record_name}, {number}")
+
+            link = (
+                f"<a href='{url}' target='_blank'>{record_name}</a>"
+                if number is None
+                else f"<a href='{url}' target='_blank'>{record_name}-{number}</a>"
             )
-            return f"<a href='{url}' target='_blank'>{record_name}</a>"
+            return link
 
         def process_param(description, value):
-            """Process individual parameter based on its type and return formatted HTML."""
-            param_type = description["type"]
+            """Process a single parameter description and value."""
+            param_type = description["field_type"]
 
             match param_type:
                 case "link":
                     return format_link(description, value)
                 case "link_array":
                     formatted_links = []
-                    for link in value:
-                        formatted_links.append(format_link(description, link))
+                    for num, link in enumerate(value):
+                        formatted_links.append(format_link(description, link, num + 1))
                     return " ".join(formatted_links)
                 case "text":
                     return value
@@ -296,16 +307,17 @@ class AgentMint:
                     logger.warning(f"Unknown parameter description type: {param_type}")
 
         for param_name, param_value in params.items():
-            print(f"Processing parameter '{param_name}': {param_value}")
             param_description = tool_info.get(param_name)
 
             if not param_description:
                 logger.warning(f"Description for parameter '{param_name}' not found.")
                 continue
 
-            print(f"Param description: {param_description}")
+            if param_description.get("show") is False:
+                continue
 
-            if param_description["type"] == "dict":
+            if param_description["field_type"] == "dict":
+                additional_params = {}
                 for attr_name, attr_value in param_value.items():
                     attr_description = param_description["description"].get(attr_name)
                     if attr_description:
@@ -313,10 +325,15 @@ class AgentMint:
                             process_param(attr_description, attr_value)
                         )
                     else:
+                        additional_params[attr_name] = attr_value
                         logger.warning(
-                            f"Description for attribute '{attr_name}' in parameter '{param_name}' not found."
+                            f"Description for attribute '{attr_name}' in {param_name} not found."
                         )
-            else:
+                if additional_params:
+                    formatted_params[param_description["additional_params"]] = (
+                        additional_params
+                    )
+            elif param_value:
                 formatted_params[param_description["description"]] = process_param(
                     param_description, param_value
                 )

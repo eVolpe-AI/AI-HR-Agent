@@ -16,7 +16,7 @@ class MintDeleteRelInput(BaseModel):
     related_id: str = Field(..., description="ID of the related record")
 
 
-class MintDeleteRelTool(BaseTool, MintBaseTool, ToolUtils):
+class MintDeleteRelTool(BaseTool, MintBaseTool):
     name: str = "MintDeleteRelTool"
     description: str = """Tool to delete a relationship between records in MintHCM modules. If you don't know ID numbers, you need to get
     both record_id and related_id by using MintSearchTool"""

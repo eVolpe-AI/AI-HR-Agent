@@ -8,7 +8,6 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import (
-    ToolFieldDescription,
     ToolUtils,
     tool_response,
 )
@@ -16,10 +15,7 @@ from mint_agent.tools.MintHCM.BaseTool import (
 
 class CalendarInput(BaseModel):
     format: str = Field(
-        description=" Date format to be returned. Default is YYYY-MM-DD (Day)",
-        json_schema_extra={
-            "field_description": ToolFieldDescription("Date format"),
-        },
+        description="Date format to be returned. Default is YYYY-MM-DD (Day)",
     )
 
 

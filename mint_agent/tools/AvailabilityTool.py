@@ -9,7 +9,7 @@ from langchain_core.runnables.config import RunnableConfig
 from mysql.connector import Error
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import tool_response
+from mint_agent.tools.MintHCM.BaseTool import ToolUtils, tool_response
 
 load_dotenv()
 
@@ -27,7 +27,7 @@ class AvailabilityInput(BaseModel):
     )
 
 
-class AvailabilityTool(BaseTool):
+class AvailabilityTool(BaseTool, ToolUtils):
     name: str = "AvailabilityTool"
     description: str = """
         Useful when you want to check the availability of a person. This tool returns information about times when user is not available due to meetings and/or calls. 
@@ -102,25 +102,3 @@ class AvailabilityTool(BaseTool):
             return tool_response(f"Calls: {calls_output}.")
         else:
             return tool_response("No records found")
-
-    def get_tool_human_info(self) -> dict:
-        return_dict = {}
-        schema_fields = self.args_schema.__fields__
-        for field in schema_fields:
-            if (
-                schema_fields[field].json_schema_extra
-                and schema_fields[field].json_schema_extra["human_description"]
-            ):
-                return_dict[field] = {
-                    "description": schema_fields[field].json_schema_extra[
-                        "human_description"
-                    ],
-                    "type": schema_fields[field].json_schema_extra.get("type", "text"),
-                    "module": schema_fields[field].json_schema_extra.get(
-                        "module", None
-                    ),
-                }
-            else:
-                return_dict[field] = schema_fields[field].description
-
-        return return_dict

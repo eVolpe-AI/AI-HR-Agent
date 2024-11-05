@@ -5,22 +5,38 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, ToolUtils, tool_response
+from mint_agent.tools.MintHCM.BaseTool import (
+    MintBaseTool,
+    ToolFieldDescription,
+    tool_response,
+)
 
 
 class MintDeleteDataInput(BaseModel):
     module_name: str = Field(
         ...,
         description="Name of the module in Mint in which the record is to be deleted",
+        json_schema_extra={
+            "field_description": ToolFieldDescription("Module", show=False),
+        },
     )
-    id: Any = Field(..., description="ID number of the record to be deleted")
+    id: Any = Field(
+        ...,
+        description="ID number of the record to be deleted",
+        json_schema_extra={
+            "field_description": ToolFieldDescription(
+                "Link", "link", reference_name="module_name"
+            ),
+        },
+    )
 
 
-class MintDeleteRecordTool(BaseTool, MintBaseTool, ToolUtils):
+class MintDeleteRecordTool(BaseTool, MintBaseTool):
     name: str = "MintDeleteRecordTool"
     description: str = """General Tool to delete records in MintHCM modules, for example employees, candidates, meetings etc.
     Dont use this tool without knowing the fields available in the module. Use MintGetModuleFieldsTool to get list of fields available in the module.
     Use MintSearchTool to retrieve ID of the record"""
+    request_message: str = "Agent wants to delete a record"
     args_schema: Type[BaseModel] = MintDeleteDataInput
 
     def _run(

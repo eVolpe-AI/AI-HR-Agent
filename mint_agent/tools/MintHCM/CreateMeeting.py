@@ -21,23 +21,17 @@ class MintCreateMeetingInput(BaseModel):
     Example: { 'name': 'Meeting with John', 'date_start': '2022-01-01 12:00:00', 'date_end': '2022-01-01 13:00:00', 'assigned_user_id': '1'}
     """,
         json_schema_extra={
-            "human_description": {
-                "name": ToolFieldDescription("Meeting name"),
-                "date_start": {
-                    "description": "Start time",
-                    "type": "text",
+            "field_description": ToolFieldDescription(
+                {
+                    "name": ToolFieldDescription("Meeting name"),
+                    "date_start": ToolFieldDescription("Start time"),
+                    "date_end": ToolFieldDescription("End time"),
+                    "assigned_user_id": ToolFieldDescription(
+                        "Assigned to", "link", module="Users"
+                    ),
                 },
-                "date_end": {
-                    "description": "End time",
-                    "type": "text",
-                },
-                "assigned_user_id": {
-                    "description": "Assigned to",
-                    "type": "link",
-                    "module": "Users",
-                },
-            },
-            "type": "dict",
+                "dict",
+            ),
         },
     )
     attendees: List[str] = Field(
@@ -47,9 +41,9 @@ class MintCreateMeetingInput(BaseModel):
     If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM.
     """,
         json_schema_extra={
-            "human_description": "Attendees",
-            "type": "link_array",
-            "module": "Users",
+            "field_description": ToolFieldDescription(
+                "Attendees", "link_array", module="Users"
+            ),
         },
     )
     candidates: List[str] = Field(
@@ -59,14 +53,14 @@ class MintCreateMeetingInput(BaseModel):
     If you have just first_name and a last_name of the candidate, use MintSearchTool to search for candidate id in MintHCM.
     """,
         json_schema_extra={
-            "human_description": "Candidates",
-            "type": "link_array",
-            "module": "Candidates",
+            "field_description": ToolFieldDescription(
+                "Candidates", "link_array", module="Candidates"
+            )
         },
     )
 
 
-class MintCreateMeetingTool(BaseTool, MintBaseTool, ToolUtils):
+class MintCreateMeetingTool(BaseTool, MintBaseTool):
     name: str = "MintCreateMeetingTool"
     description: str = """
     Tool to create new meetings with attendees in MintHCM modules.
@@ -74,7 +68,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool, ToolUtils):
     Use CalendarTool to get current_date and derive from it proper date_start and date_end for the meeting if asked to create meeting for today, tomorrow etc.
     Use MintGetModuleFieldsTool to get list of fields available in the module.
     """
-    request_message: str = "Agent wants to create such meeting:"
+    request_message: str = "Agent wants to create a meeting"
     args_schema: Type[BaseModel] = MintCreateMeetingInput
 
     def _run(
