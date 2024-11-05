@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from mint_agent.tools.MintHCM.BaseTool import (
     MintBaseTool,
     ToolFieldDescription,
-    ToolUtils,
     tool_response,
 )
 

@@ -33,7 +33,7 @@ class ToolFieldDescription:
             module (Optional[str]): Module reference for the field, used to build a link to record when field_type equals link or link_array.
             show (bool): Whether to display the field. Defaults to True.
             reference_name (Optional[str]): module name reference, used to build a link to record when field_type equals link or link_array.
-                Useful when module name is not known at the time of writing the tool, but module name is passed to the tool. e.g.
+                Useful when module name is not known before tool execution.
 
                 class ExampleInput(BaseModel):
                     module_name: str = Field(description="Module name")
@@ -107,8 +107,7 @@ class ToolUtils:
             else:
                 return_dict[field] = {
                     "description": schema_fields[field].description,
-                    "type": "text",
-                    "module": None,
+                    "field_type": "text",
                 }
 
         return return_dict, request_message

@@ -280,8 +280,6 @@ class AgentMint:
                 module = description["module"]
             url, record_name = suite_connection.get_record_url(module, value, True)
 
-            print(f"{url} {record_name}, {number}")
-
             link = (
                 f"<a href='{url}' target='_blank'>{record_name}</a>"
                 if number is None
@@ -308,7 +306,6 @@ class AgentMint:
 
         for param_name, param_value in params.items():
             param_description = tool_info.get(param_name)
-
             if not param_description:
                 logger.warning(f"Description for parameter '{param_name}' not found.")
                 continue
@@ -344,7 +341,7 @@ class AgentMint:
             else f"<strong>{tool_name} Request</strong><br><br>"
         )
 
-        for key, val in formatted_params.items():
-            html_formatted_description += f"<b>{key}:</b> {val} <br>"
+        for param_name, param_value in formatted_params.items():
+            html_formatted_description += f"<b>{param_name}:</b> {param_value} <br>"
 
         return html_formatted_description
