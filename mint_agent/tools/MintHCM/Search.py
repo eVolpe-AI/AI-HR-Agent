@@ -40,7 +40,7 @@ class MintSearchInput(BaseModel):
     )
     operator: str = Field(
         ...,
-        description="Operator to use to join all filter. Possible values: 'and','or'",
+        description="Operator to use to join all filters. Possible values: 'and','or'",
     )
     fields: str = Field(
         ...,
@@ -63,105 +63,59 @@ class MintSearchTool(BaseTool, MintBaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> Dict[str, Any]:
         try:
-            module_names_tool = MintGetModuleNamesTool()
-            module_names = module_names_tool._run(config=config)["response"]
-
+            module_names = MintGetModuleNamesTool()._run(config=config)["response"]
             if module_name not in module_names:
                 raise ToolException(
                     f"Module {module_name} does not exist. Try to use MintGetModuleNamesTool to get list of available modules."
                 )
 
-            module_fields_tool = MintGetModuleFieldsTool()
-
-            module_fields = module_fields_tool._run(module_name, config=config)[
+            module_fields = MintGetModuleFieldsTool()._run(module_name, config=config)[
                 "response"
-            ]
-            # we need to check if the fields provided in the fields argument are in the module_fields
-            # Example module_fields:
-            # {'fields': {'id': {'dbType': 'id'}, 'name': {'dbType': 'name'}, 'date_entered': {'dbType': 'datetime'}}
+            ]["fields"]
+
+            print(module_fields)
+
             fields_array = fields.replace(" ", "").split(",")
-            fieldss = module_fields["fields"]
-            field_names = fieldss.keys()
+            available_fields = module_fields.keys()
+
             for field in fields_array:
-                if field and field not in field_names:
-                    # print(f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module.")
-                    # print(field_names)
+                if field and field not in available_fields:
                     raise ToolException(
-                        f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module."
+                        f"Field {field} is not available in the {module_name} module. Use MintGetModuleFieldsTool to get list of fields available in the module."
                     )
 
             suitecrm = self.get_connection(config)
             module = Module(suitecrm, module_name)
 
-            # print(f"Module: {module_name}, filters: {filters}, fields: {fields}")
-
             filters_array = json.loads(filters)
-            fields_array = fields.replace(" ", "").split(",")
-
-            # print(f"Filters: {filters_array}")
-            # print(f"Fields: {fields_array}")
-
-            if operator not in ["and", "or"]:
-                operator = "and"
-            operators = {
-                "=": "EQ",
-                "<>": "NEQ",
-                ">": "GT",
-                ">=": "GTE",
-                "<": "LT",
-                "<=": "LTE",
-            }
+            operator = operator if operator in ["and", "or"] else "and"
 
             if "filters" in filters_array:
-                filter_list_filters = filters_array["filters"]
+                filter_fields = filters_array.get("filters", {})
 
-                # print(f"filter_list_filters: {filter_list_filters}")
-                #    filter_str = ""
-                # for f in filter_list_filters:
-                #    print(f'fff: {f}')
-                #     for key in f:
-                #         filter_str += f"{key} {f[key]['operator']} '{f[key]['value']}' AND "
-
-                if filter_list_filters:
-                    # we need to check if the fields provided in the filters are in the module_fields
-                    for field, value in filter_list_filters.items():
-                        if field and field not in field_names:
-                            # print(f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module.")
-                            print(module_fields)
-
-                            raise ToolException(
-                                f"Field {field} is not available in the module {module_name}. Use MintGetModuleFieldsTool to get list of fields available in the module."
-                            )
-
-                    #        for field, value in filter_list_filters.items():
-                    #            print(f'fff: {field}, {value}')
-                    #            if isinstance(value, dict):
-                    #                filter_str = f'{filter_str}[{field}][{operators[value["operator"]]}]={value["value"]}and&'
-                    #            else:
-                    #                filter_str = f'{filter_str}[{field}][eq]={value}and&'
-                    #        print(f'Filters string : {filter_str}')
-
-                    # filter_list_filters.operator = 'AND'
-                    response = module.get(
-                        fields=fields_array,
-                        sort=None,
-                        operator=operator,
-                        **filter_list_filters,
-                    )
-                else:
-                    response = module.get(
-                        fields=fields_array, sort=None, operator=operator, deleted="0"
-                    )
+                for field in filter_fields:
+                    if field not in available_fields:
+                        raise ToolException(
+                            f"Field {field} is not available in the {module_name} module. Use MintGetModuleFieldsTool to get list of fields available in the module."
+                        )
+                response = module.get(
+                    fields=fields_array,
+                    sort=None,
+                    operator=operator,
+                    **filter_fields,
+                )
             else:
                 response = module.get(
                     fields=fields_array, sort=None, operator=operator, deleted="0"
                 )
-            # print(f"response: {response}")
-            data = response
-            # copy rows from data to return_data, only the attributes
-            return_data = []
-            for row in data:
-                return_data.append({"id": row["id"], **row["attributes"]})
-            return tool_response({"data": return_data})
+
+            return_data = [{"id": row["id"], **row["attributes"]} for row in response]
+
+            if not return_data:
+                return tool_response(
+                    f"No records found in module {module_name} with given filters"
+                )
+
+            return tool_response(return_data)
         except Exception as e:
             raise ToolException(f"Error: {e}")

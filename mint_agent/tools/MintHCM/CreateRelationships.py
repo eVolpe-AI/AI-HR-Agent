@@ -6,11 +6,15 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintCreateRelInput(BaseModel):
     record_id: str = Field(
         ..., description="ID of the record to create a relationship from"
+    )
+    base_module: str = Field(
+        ..., description="Name of the module in which the record is present"
     )
     related_module: str = Field(..., description="Name of the related module")
     related_id: str = Field(..., description="ID of the related record")
@@ -25,6 +29,7 @@ class MintCreateRelTool(BaseTool, MintBaseTool):
     def _run(
         self,
         record_id: str,
+        base_module: str,
         related_module: str,
         related_id: str,
         config: RunnableConfig,
@@ -32,9 +37,10 @@ class MintCreateRelTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         try:
             suitecrm = self.get_connection(config)
-            result = suitecrm.Meetings.create_relationship(
-                record_id, related_module, related_id
-            )
-            return tool_response({"status": "success", "result": result})
+
+            module = Module(suitecrm, base_module)
+
+            result = module.create_relationship(related_module, related_id, record_id)
+            return tool_response(result)
         except Exception as e:
             return {"status": "error", "message": str(e)}
