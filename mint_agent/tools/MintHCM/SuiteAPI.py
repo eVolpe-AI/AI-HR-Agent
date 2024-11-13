@@ -175,7 +175,6 @@ class SuiteCRM:
         """
         url = f"/module/{module_name}/{record_id}"
         response = self.request(f"{self.baseurl}{url}", "get")
-        print("Response in verify_record_exists: ", response)
         errors = response.get("errors")
         if errors:
             if errors.get("status") == 400:

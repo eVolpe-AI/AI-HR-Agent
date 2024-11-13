@@ -36,7 +36,6 @@ async def call_agent(
     Yields:
         AgentMessage object
     """
-    agent.visualize_graph()
     async for message in agent.invoke(message):
         yield message
 
