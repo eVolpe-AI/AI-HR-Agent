@@ -48,17 +48,16 @@ class AgentToolNode(ToolNode):
         if invalid_tool_message := self._validate_tool_call(call):
             return invalid_tool_message
         try:
-            input = {**call, **{"type": "tool_call"}}
+            inp = {**call, **{"type": "tool_call"}}
             tool_message: ToolMessage = await self.tools_by_name[call["name"]].ainvoke(
-                input, config
+                inp, config
             )
             tool_response = json.loads(tool_message.content)
             response = tool_response["response"]
             extra_data = tool_response.get("extra_data", None)
             print(f"Extra data: {extra_data}, type: {type(extra_data)}")
-            if extra_data:
-                if extra_data["url"]:
-                    await adispatch_custom_event("tool_url", extra_data["url"])
+            if extra_data.get("url"):
+                await adispatch_custom_event("tool_url", extra_data["url"])
 
             tool_message.content = cast(Union[str, list], msg_content_output(response))
             return tool_message
