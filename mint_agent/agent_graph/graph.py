@@ -7,8 +7,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from mint_agent.agent_graph.nodes.gear_manager import gear_manager
 from mint_agent.agent_graph.nodes.history_manager import history_manager
 from mint_agent.agent_graph.nodes.llm_call import llm_call
+from mint_agent.agent_graph.nodes.tool_controller import tool_controller
 from mint_agent.agent_graph.nodes.tool_node import AgentToolNode
-from mint_agent.agent_graph.nodes.tool_permit import tool_permit
 from mint_agent.agent_state.state import GraphState
 from mint_agent.database.db_utils import MongoDBCheckpointSaver
 
@@ -22,12 +22,8 @@ def should_continue(state) -> str:
         return "continue"
 
 
-def check_user_decision(state) -> str:
-    decision = state["tool_accept"]
-    if decision:
-        return "safe"
-    else:
-        return "unsafe"
+def check_tool_decision(state) -> str:
+    return state["tool_decision"]
 
 
 def check_message_type(state) -> str:
@@ -42,7 +38,7 @@ def create_graph(tools: list) -> StateGraph:
 
     graph.add_node("llm_node", llm_call)
     graph.add_node("tool_node", AgentToolNode(tools))
-    graph.add_node("tool_controller_node", tool_permit)
+    graph.add_node("tool_controller_node", tool_controller)
     graph.add_node("gear_manager_node", gear_manager)
     graph.add_node("history_manager_node", history_manager)
 
@@ -60,8 +56,8 @@ def create_graph(tools: list) -> StateGraph:
     )
     graph.add_conditional_edges(
         "tool_controller_node",
-        check_user_decision,
-        {"safe": "tool_node", "unsafe": END},
+        check_tool_decision,
+        {"safe": "tool_node", "unsafe": END, "validation_error": "llm_node"},
     )
     graph.add_edge("tool_node", "llm_node")
 

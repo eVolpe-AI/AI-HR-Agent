@@ -22,6 +22,7 @@ class ToolFieldDescription:
         module: Optional[str] = None,
         show: bool = True,
         reference_name: Optional[str] = None,
+        required: bool = False,
     ) -> None:
         """
         Initializes a ToolFieldDescription instance.
@@ -34,6 +35,7 @@ class ToolFieldDescription:
             show (bool): Whether to display the field. Defaults to True.
             reference_name (Optional[str]): module name reference, used to build a link to record when field_type equals link or link_array.
                 Useful when module name is not known before tool execution.
+            required (bool): Whether the value is required to use the tool. Defaults to False.
 
                 class ExampleInput(BaseModel):
                     module_name: str = Field(description="Module name")
@@ -49,6 +51,7 @@ class ToolFieldDescription:
         self.module = module
         self.show = show
         self.reference_name = reference_name
+        self.required = required
 
         if self.field_type == "link" and not (self.reference_name or self.module):
             raise ValueError(
@@ -75,6 +78,7 @@ class ToolFieldDescription:
             "module": self.module,
             "show": self.show,
             "reference_name": self.reference_name,
+            "required": self.required,
         }
 
         if self.field_type == "dict":
@@ -86,31 +90,35 @@ class ToolFieldDescription:
 
 
 class ToolUtils:
-    def get_tool_fields_info(self) -> dict:
+    def get_tool_info(self) -> dict:
         if hasattr(self, "request_message"):
             request_message = self.request_message
         else:
             request_message = None
-            logger.warning(f"No request message found for tool {self.name}.")
+
         return_dict = {}
-        schema_fields = self.args_schema.__fields__
 
-        for field in schema_fields:
-            if (
-                schema_fields[field].json_schema_extra
-                and schema_fields[field].json_schema_extra["field_description"]
-            ):
-                field_description = schema_fields[field].json_schema_extra[
-                    "field_description"
-                ]
-                return_dict[field] = field_description.get_field_info()
-            else:
-                return_dict[field] = {
-                    "description": schema_fields[field].description,
-                    "field_type": "text",
-                }
+        if hasattr(self, "args_schema") and hasattr(self.args_schema, "__fields__"):
+            schema_fields = self.args_schema.__fields__
+            for field in schema_fields:
+                if (
+                    schema_fields[field].json_schema_extra
+                    and schema_fields[field].json_schema_extra["field_description"]
+                ):
+                    field_description = schema_fields[field].json_schema_extra[
+                        "field_description"
+                    ]
+                    return_dict[field] = field_description.get_field_info()
+                else:
+                    return_dict[field] = {
+                        "description": schema_fields[field].description,
+                        "field_type": "text",
+                        "required": False,
+                    }
 
-        return return_dict, request_message
+            return return_dict, request_message
+        else:
+            return {}, request_message
 
 
 class BaseAgentTool(ABC):

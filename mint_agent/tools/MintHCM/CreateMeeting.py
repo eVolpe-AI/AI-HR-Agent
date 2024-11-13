@@ -1,15 +1,20 @@
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Type
 
+from dotenv import load_dotenv
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
+from mint_agent.database.mint_db import to_db_time
 from mint_agent.tools.MintHCM.BaseTool import (
     MintBaseTool,
     ToolFieldDescription,
     tool_response,
 )
+
+load_dotenv()
 
 
 class MintCreateMeetingInput(BaseModel):
@@ -26,7 +31,7 @@ class MintCreateMeetingInput(BaseModel):
                     "date_start": ToolFieldDescription("Start time"),
                     "date_end": ToolFieldDescription("End time"),
                     "assigned_user_id": ToolFieldDescription(
-                        "Assigned to", "link", module="Users"
+                        "Assigned to", "link", module="Users", required=True
                     ),
                 },
                 "dict",
@@ -78,9 +83,44 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
         config: RunnableConfig,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> Dict[str, Any]:
+        meeting_start_date = attributes.get("date_start")
+        meeting_end_date = attributes.get("date_end")
+
+        if not meeting_start_date or not meeting_end_date:
+            raise ToolException(
+                "date_start and date_end are required fields in attributes"
+            )
+
+        date_format = "%Y-%m-%d %H:%M:%S"
+
+        try:
+            start_date = datetime.strptime(meeting_start_date, date_format)
+            end_date = datetime.strptime(meeting_end_date, date_format)
+        except ValueError:
+            raise ToolException(
+                "date_start and date_end must be in format 'YYYY-MM-DD HH:MM:SS' e.g. '2022-01-01 12:00:00'"
+            )
+
+        attributes["duration_hours"] = (end_date - start_date).seconds // 3600
+        attributes["duration_minutes"] = (end_date - start_date).seconds % 3600 // 60
+
+        attributes["date_start"] = to_db_time(meeting_start_date, date_format)
+        attributes["date_end"] = to_db_time(meeting_end_date, date_format)
+
         try:
             module_name = "Meetings"
             suitecrm = self.get_connection(config)
+
+            for attendee in attendees:
+                if not suitecrm.verify_record_exists(attendee, "Users"):
+                    return tool_response(f"User with id {attendee} does not exist")
+
+            for candidate in candidates:
+                if not suitecrm.verify_record_exists(candidate, "Candidates"):
+                    return tool_response(
+                        f"Candidate with id {candidate} does not exist"
+                    )
+
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, "post", parameters=data)

@@ -102,7 +102,9 @@ class AgentMint:
         """
         Visualize the agent's graph schema and save it as a PNG file.
         """
-        self.app.get_graph().draw_mermaid_png(output_file_path="utils/graph_schema.png")
+        self.app.get_graph().draw_mermaid_png(
+            output_file_path="mint_agent/utils/graph_schema.png"
+        )
 
     async def invoke(self, message: UserMessage) -> AsyncGenerator[str, None]:
         """
@@ -258,16 +260,11 @@ class AgentMint:
         """
 
         suite_connection = MintBaseTool().get_connection(self.config)
-        tool_name = tool_data["tool"]
-        tool_fields_info = ToolController.available_tools[
-            tool_name
-        ].get_tool_fields_info()
 
-        tool_info, request_message = (
-            tool_fields_info
-            if isinstance(tool_fields_info, tuple)
-            else (tool_fields_info, None)
-        )
+        tool_name = tool_data["tool"]
+        tool_info, request_message = ToolController.available_tools[
+            tool_name
+        ].get_tool_info()
 
         params = tool_data["params"]
         formatted_params = {}
@@ -306,11 +303,16 @@ class AgentMint:
 
         for param_name, param_value in params.items():
             param_description = tool_info.get(param_name)
+
             if not param_description:
                 logger.warning(f"Description for parameter '{param_name}' not found.")
                 continue
 
-            if param_description.get("show") is False:
+            if (
+                param_description.get("show") is False
+                or param_value == ""
+                or param_value == [""]
+            ):
                 continue
 
             if param_description["field_type"] == "dict":
