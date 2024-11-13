@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type
 
-from dotenv import load_dotenv
 from langchain.callbacks.manager import CallbackManagerForToolRun
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
@@ -14,8 +13,6 @@ from mint_agent.tools.MintHCM.BaseTool import (
     tool_response,
 )
 
-load_dotenv()
-
 
 class MintCreateMeetingInput(BaseModel):
     attributes: Dict[str, Any] = Field(
@@ -27,9 +24,9 @@ class MintCreateMeetingInput(BaseModel):
         json_schema_extra={
             "field_description": ToolFieldDescription(
                 {
-                    "name": ToolFieldDescription("Meeting name"),
-                    "date_start": ToolFieldDescription("Start time"),
-                    "date_end": ToolFieldDescription("End time"),
+                    "name": ToolFieldDescription("Meeting name", required=True),
+                    "date_start": ToolFieldDescription("Start time", required=True),
+                    "date_end": ToolFieldDescription("End time", required=True),
                     "assigned_user_id": ToolFieldDescription(
                         "Assigned to", "link", module="Users", required=True
                     ),
@@ -85,11 +82,6 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         meeting_start_date = attributes.get("date_start")
         meeting_end_date = attributes.get("date_end")
-
-        if not meeting_start_date or not meeting_end_date:
-            raise ToolException(
-                "date_start and date_end are required fields in attributes"
-            )
 
         date_format = "%Y-%m-%d %H:%M:%S"
 
