@@ -93,6 +93,7 @@ class AgentMint:
                 ),
                 system_prompt=prev_state.values.get("system_prompt", None),
                 history_token_count=prev_state.values.get("history_token_count", 0),
+                is_advanced=self.is_advanced,
             )
         except Exception as e:
             logger.error(f"Failed to get previous state: {e}")
@@ -191,7 +192,7 @@ class AgentMint:
         output = None
         match event_kind:
             case "on_chat_model_stream":
-                if "silent" not in event["tags"]:
+                if "silent" not in event["tags"] and self.is_advanced:
                     content = event["data"]["chunk"].content
                     if content:
                         if isinstance(content, str):
@@ -235,19 +236,29 @@ class AgentMint:
                         type=AgentMessageType.TOOL_END,
                     )
             case "on_custom_event":
-                if event["name"] == "tool_accept":
-                    request_message = self.prepare_tool_request(event["data"])
+                match event["name"]:
+                    case "tool_accept":
+                        request_message = self.prepare_tool_request(event["data"])
+                        output = AgentMessage(
+                            type=AgentMessageType.ACCEPT_REQUEST,
+                            tool_input=request_message,
+                            tool_name=event["data"]["tool"],
+                        )
+                    case "tool_url":
+                        output = AgentMessage(
+                            type=AgentMessageType.LINK,
+                            content=event["data"],
+                        )
+                    case "llm_response":
+                        response = event["data"].get("response")
 
-                    output = AgentMessage(
-                        type=AgentMessageType.ACCEPT_REQUEST,
-                        tool_input=request_message,
-                        tool_name=event["data"]["tool"],
-                    )
-                elif event["name"] == "tool_url":
-                    output = AgentMessage(
-                        type=AgentMessageType.LINK,
-                        content=event["data"],
-                    )
+                        if not response.tool_calls and "silent" not in event["tags"]:
+                            output = AgentMessage(
+                                type=AgentMessageType.LLM_TEXT,
+                                content=response.content[0]["text"],
+                            )
+                    case _:
+                        logger.warning(f"Unknown custom event: {event['name']}")
 
         return output
 

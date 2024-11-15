@@ -107,6 +107,7 @@ class GraphState(TypedDict):
     system_prompt: str
     history_token_count: int
     tools: list[Any]
+    is_advanced: bool
 
     def __init__(
         self,
@@ -122,6 +123,7 @@ class GraphState(TypedDict):
         tools: list[Any],
         history_token_count: int,
         conversation_summary: str = None,
+        is_advanced: bool = False,
     ):
         self.messages = messages
         self.safe_tools = safe_tools
@@ -135,3 +137,4 @@ class GraphState(TypedDict):
         self.system_prompt = system_prompt
         self.history_token_count = history_token_count
         self.tools = tools
+        self.is_advanced = is_advanced
