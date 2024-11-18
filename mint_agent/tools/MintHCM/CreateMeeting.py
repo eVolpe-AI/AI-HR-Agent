@@ -5,7 +5,8 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintCreateMeetingInput(BaseModel):
@@ -60,6 +61,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             url = f"{self.api_url}/module"
             data = {"type": module_name, "attributes": attributes}
             response = suitecrm.request(url, "post", parameters=data)
+            meeting_url = suitecrm.get_record_url(module_name, response["data"]["id"])
 
             def add_relationships(relationship_type, ids):
                 for record_id in ids:
@@ -77,7 +79,9 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             if candidates:
                 add_relationships("candidates", candidates)
 
-            return "New meeting created in module 'Meetings'."
+            return tool_response(
+                "New meeting created in module 'Meetings'", {"url": meeting_url}
+            )
 
         except Exception as e:
             raise ToolException(f"Error: {e}")

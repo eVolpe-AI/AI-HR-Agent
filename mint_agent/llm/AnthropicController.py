@@ -15,7 +15,6 @@ class AnthropicController(BaseController):
     def __init__(
         self,
         model_name: Optional[str] = DEFAULT_MODEL,
-        api_key: Optional[str] = None,
         temperature: Optional[float] = 0.0,
         max_tokens: Optional[int] = DEFAULT_MAX_TOKENS,
         tools: Optional[list] = None,
@@ -36,7 +35,6 @@ class AnthropicController(BaseController):
         tools = tools or []
 
         self.client = ChatAnthropic(
-            anthropic_api_key=api_key,
             model=model_name,
             temperature=temperature,
             max_tokens=max_tokens,

@@ -2,12 +2,12 @@ import os
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from langgraph.prebuilt import ToolNode
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from mint_agent.agent_graph.nodes.gear_manager import gear_manager
 from mint_agent.agent_graph.nodes.history_manager import history_manager
 from mint_agent.agent_graph.nodes.llm_call import llm_call
+from mint_agent.agent_graph.nodes.tool_node import AgentToolNode
 from mint_agent.agent_graph.nodes.tool_permit import tool_permit
 from mint_agent.agent_state.state import GraphState
 from mint_agent.database.db_utils import MongoDBCheckpointSaver
@@ -41,7 +41,7 @@ def create_graph(tools: list) -> StateGraph:
     graph = StateGraph(GraphState)
 
     graph.add_node("llm_node", llm_call)
-    graph.add_node("tool_node", ToolNode(tools))
+    graph.add_node("tool_node", AgentToolNode(tools))
     graph.add_node("tool_controller_node", tool_permit)
     graph.add_node("gear_manager_node", gear_manager)
     graph.add_node("history_manager_node", history_manager)

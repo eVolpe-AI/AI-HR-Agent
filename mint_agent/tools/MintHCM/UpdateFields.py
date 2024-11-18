@@ -5,7 +5,8 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 
 class MintUpdateDataInput(BaseModel):
@@ -23,8 +24,8 @@ class MintUpdateDataInput(BaseModel):
 
 
 class MintUpdateFieldsTool(BaseTool, MintBaseTool):
-    name = "MintUpdateFieldsTool"
-    description = """Use this tool to update fields in the module based on data received from the user. Use this tool to update value of the field in the module,
+    name: str = "MintUpdateFieldsTool"
+    description: str = """Use this tool to update fields in the module based on data received from the user. Use this tool to update value of the field in the module,
     for example, duration or start date. Before using MintUpdateFieldsTool, ensure you have the correct module name and record ID. If not, use MintSearchTool to retrieve them.
 """
     args_schema: Type[BaseModel] = MintUpdateDataInput
@@ -42,7 +43,11 @@ class MintUpdateFieldsTool(BaseTool, MintBaseTool):
             url = f"{self.api_url}/module"
             data = {"type": module_name, "id": id, "attributes": attributes}
             response = suitecrm.request(url, "patch", parameters=data)
-            return "Updated field in module " + module_name + " with ID " + id
+            record_url = suitecrm.get_record_url(module_name, id)
+            return tool_response(
+                f"Updated field in module {module_name} with ID {id}",
+                {"url": record_url},
+            )
 
         except Exception as e:
             raise ToolException(f"Error: {e}")

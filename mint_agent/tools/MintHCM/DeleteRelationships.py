@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 
 
 class MintDeleteRelInput(BaseModel):
@@ -35,6 +35,6 @@ class MintDeleteRelTool(BaseTool, MintBaseTool):
             result = suitecrm.Meetings.delete_relationship(
                 record_id, related_module, related_id
             )
-            return {"status": "success", "result": result}
+            return tool_response({"status": "success", "result": result})
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return tool_response({"status": "error", "message": str(e)})

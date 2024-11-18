@@ -43,6 +43,7 @@ class AgentMessageType(Enum):
     LLM_START = "llm_start"
     LLM_END = "llm_end"
     LLM_TEXT = "llm_text"
+    LINK = "link"
     ACCEPT_REQUEST = "accept_request"
     TOOL_START = "tool_start"
     TOOL_END = "tool_end"

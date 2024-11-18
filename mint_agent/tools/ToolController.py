@@ -3,6 +3,7 @@ from loguru import logger
 
 from mint_agent.tools.AvailabilityTool import AvailabilityTool
 from mint_agent.tools.CalendarTool import CalendarTool
+from mint_agent.tools.MintHCM.BaseTool import tool_response
 from mint_agent.tools.MintHCM.CreateMeeting import MintCreateMeetingTool
 from mint_agent.tools.MintHCM.CreateRecord import MintCreateRecordTool
 from mint_agent.tools.MintHCM.CreateRelationships import MintCreateRelTool
@@ -17,16 +18,15 @@ from mint_agent.tools.MintHCM.UpdateFields import MintUpdateFieldsTool
 
 
 def _handle_tool_error(error: ToolException) -> str:
-    # find if what was returned contains phrase "Module ... does not exist"
     if "does not exist" in error.args[0]:
         logger.error(f"Agent was trying to use module, which does not exist. {error}")
-        return f"Module Error: {error} . Try to use MintGetModuleNamesTool to get list of available modules."
+        return tool_response(
+            f"Module Error: {error} . Try to use MintGetModuleNamesTool to get list of available modules."
+        )
     else:
         logger.error(f"The following error occurred during tool execution: {error}")
-        return (
-            "The following errors occurred during tool execution:"
-            + error.args[0]
-            + "Please try another tool."
+        return tool_response(
+            f"The following errors occurred during tool execution: {error.args[0]} Please try another tool."
         )
 
 
@@ -53,7 +53,7 @@ class ToolController:
         ),
         "MintDeleteRelTool": MintDeleteRelTool(handle_tool_error=_handle_tool_error),
         "MintGetRelTool": MintGetRelTool(handle_tool_error=_handle_tool_error),
-        "CalendarTool": CalendarTool(name="CalendarTool"),
+        "CalendarTool": CalendarTool(),
         "AvailabilityTool": AvailabilityTool(),
     }
 
@@ -75,6 +75,12 @@ class ToolController:
 
     safe_tools = [
         "CalendarTool",
+        "AvailabilityTool",
+        "MintGetRelTool",
+        "MintGetUsersTool",
+        "MintGetModuleNamesTool",
+        "MintGetModuleFieldsTool",
+        "MintSearchTool",
     ]
 
     @staticmethod

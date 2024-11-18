@@ -6,7 +6,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 from mint_agent.tools.MintHCM.GetModuleFields import MintGetModuleFieldsTool
 from mint_agent.tools.MintHCM.GetModuleNames import MintGetModuleNamesTool
 from mint_agent.tools.MintHCM.SuiteAPI import Module
@@ -64,7 +64,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         try:
             module_names_tool = MintGetModuleNamesTool()
-            module_names = module_names_tool._run(config=config)
+            module_names = module_names_tool._run(config=config)["response"]
 
             if module_name not in module_names:
                 raise ToolException(
@@ -73,7 +73,9 @@ class MintSearchTool(BaseTool, MintBaseTool):
 
             module_fields_tool = MintGetModuleFieldsTool()
 
-            module_fields = module_fields_tool._run(module_name, config=config)
+            module_fields = module_fields_tool._run(module_name, config=config)[
+                "response"
+            ]
             # we need to check if the fields provided in the fields argument are in the module_fields
             # Example module_fields:
             # {'fields': {'id': {'dbType': 'id'}, 'name': {'dbType': 'name'}, 'date_entered': {'dbType': 'datetime'}}
@@ -113,7 +115,7 @@ class MintSearchTool(BaseTool, MintBaseTool):
             if "filters" in filters_array:
                 filter_list_filters = filters_array["filters"]
 
-                print(f"filter_list_filters: {filter_list_filters}")
+                # print(f"filter_list_filters: {filter_list_filters}")
                 #    filter_str = ""
                 # for f in filter_list_filters:
                 #    print(f'fff: {f}')
@@ -160,6 +162,6 @@ class MintSearchTool(BaseTool, MintBaseTool):
             return_data = []
             for row in data:
                 return_data.append({"id": row["id"], **row["attributes"]})
-            return {"data": return_data}
+            return tool_response({"data": return_data})
         except Exception as e:
             raise ToolException(f"Error: {e}")

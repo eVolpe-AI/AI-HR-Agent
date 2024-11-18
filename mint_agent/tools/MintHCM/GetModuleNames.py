@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 
 
 class MintGetModuleNamesTool(BaseTool, MintBaseTool):
@@ -45,6 +45,6 @@ class MintGetModuleNamesTool(BaseTool, MintBaseTool):
                     module for module in modules if module in self.module_whitelist
                 ]
 
-            return modules
+            return tool_response(modules)
         except Exception as e:
             return f"Error occured while trying to get list of modules: {e}"

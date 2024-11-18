@@ -2,10 +2,9 @@ import os
 from abc import ABC, abstractmethod
 
 from dotenv import load_dotenv
-from loguru import logger
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
-from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
+from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 
 load_dotenv()
 
@@ -86,3 +85,14 @@ class MintBaseTool(BaseAgentTool):
             )
         except Exception as e:
             raise e
+
+
+def tool_response(
+    response: any,
+    extra_data: any = None,
+) -> dict:
+    response = {
+        "response": response,
+        "extra_data": extra_data,
+    }
+    return response

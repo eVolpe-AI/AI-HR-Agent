@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 
 
@@ -58,7 +58,7 @@ class MintGetUsersTool(BaseTool, MintBaseTool):
                 Position: {position},
                 """
                 users.append(user_data)
-            return users
+            return tool_response(users)
 
         except Exception as e:
             return f"While trying to get users, an error occurred: {e}"
