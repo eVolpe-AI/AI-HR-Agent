@@ -105,6 +105,7 @@ class GraphState(TypedDict):
     conversation_summary: str
     system_prompt: str
     history_token_count: int
+    usage_limit: dict
     tools: list[Any]
 
     def __init__(
@@ -118,6 +119,7 @@ class GraphState(TypedDict):
         history_config: HistoryManagement,
         system_prompt: str,
         tools: list[Any],
+        usage_limit: dict,
         history_token_count: int,
         conversation_summary: str = None,
     ):
@@ -132,3 +134,4 @@ class GraphState(TypedDict):
         self.system_prompt = system_prompt
         self.history_token_count = history_token_count
         self.tools = tools
+        self.usage_limit = usage_limit

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import AsyncGenerator
 
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ from mint_agent.agent_state.state import (
     HistoryManagementType,
 )
 from mint_agent.database.db_utils import MongoDBUsageTracker
-from mint_agent.llm.ChatFactory import ProviderConfig
+from mint_agent.llm.ChatFactory import ChatFactory, ProviderConfig
 from mint_agent.tools.ToolController import ToolController
 from mint_agent.utils.AgentLogger import AgentLogger
 
@@ -39,6 +40,7 @@ class AgentMint:
         chat_id: str,
         ip_addr: str,
         is_advanced: bool,
+        usage_limit: dict,
     ) -> None:
         tools = ToolController.get_tools()
         self.state = None
@@ -46,6 +48,7 @@ class AgentMint:
         self.user_id = user_id
         self.ip_addr = ip_addr
         self.is_advanced = is_advanced
+        self.usage_limit = usage_limit
 
         self.graph = create_graph(tools)
         self.app = compile_workflow(self.graph, user_id)
@@ -90,6 +93,7 @@ class AgentMint:
                 conversation_summary=prev_state.values.get(
                     "conversation_summary", None
                 ),
+                usage_limit=self.usage_limit,
                 system_prompt=prev_state.values.get("system_prompt", None),
                 history_token_count=prev_state.values.get("history_token_count", 0),
             )
@@ -102,6 +106,36 @@ class AgentMint:
         Visualize the agent's graph schema and save it as a PNG file.
         """
         self.app.get_graph().draw_mermaid_png(output_file_path="utils/graph_schema.png")
+
+    async def is_within_usage_limit(self) -> bool:
+        """
+        Check if the user has reached their usage limit.
+        """
+        TOKENS_PER_PRICE = 1_000_000
+        try:
+            usage_limit = self.state["usage_limit"]
+            token_usage = await self.usage_tracker.get_token_usage(
+                int(usage_limit["hours"])
+            )
+            model_pricing = ChatFactory.get_pricing_info(
+                self.state["provider"], self.state["model_name"]
+            )
+
+            user_spendings = sum(
+                Decimal(
+                    token_usage[category]
+                    / Decimal(TOKENS_PER_PRICE)
+                    * Decimal(model_pricing[category])
+                )
+                for category in ("input_tokens", "output_tokens")
+            )
+
+            return user_spendings < Decimal(usage_limit["cost"])
+
+        except KeyError as e:
+            raise ValueError(f"Missing expected key: {e}") from e
+        except Exception as e:
+            raise RuntimeError("An error occurred while checking usage limits.") from e
 
     async def invoke(self, message: UserMessage) -> AsyncGenerator[str, None]:
         """
@@ -119,24 +153,34 @@ class AgentMint:
         await self.set_state()
         self.agent_logger.start(self.state)
 
-        try:
-            self.handle_message(message)
+        if not await self.is_within_usage_limit():
             yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
-
-            async for event in self.app.astream_events(
-                input=self.state, version="v2", config=self.config
-            ):
-                output = await self.handle_graph_event(event)
-                if output is not None:
-                    yield output.to_json()
+            yield AgentMessage(type=AgentMessageType.LLM_START).to_json()
+            yield AgentMessage(
+                type=AgentMessageType.LLM_TEXT,
+                content="You have reached your usage limit. Please try again later.",
+            ).to_json()
+            yield AgentMessage(type=AgentMessageType.LLM_END).to_json()
             yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
-        except Exception as e:
-            await self.set_state()
-            self.agent_logger.end_error(self.state, e)
-            raise
+        else:
+            try:
+                self.handle_message(message)
+                yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
 
-        await self.set_state()
-        self.agent_logger.end(self.state)
+                async for event in self.app.astream_events(
+                    input=self.state, version="v2", config=self.config
+                ):
+                    output = await self.handle_graph_event(event)
+                    if output is not None:
+                        yield output.to_json()
+                yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
+            except Exception as e:
+                await self.set_state()
+                self.agent_logger.end_error(self.state, e)
+                raise
+
+            await self.set_state()
+            self.agent_logger.end(self.state)
 
     def handle_message(self, message: UserMessage) -> None:
         """

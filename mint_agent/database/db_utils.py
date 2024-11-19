@@ -264,31 +264,18 @@ class MongoDBUsageTracker(MongoDBBase):
             {
                 "$group": {
                     "_id": None,
-                    "total_input_tokens": {"$sum": "$tokens.input_tokens"},
-                    "total_output_tokens": {"$sum": "$tokens.output_tokens"},
-                    "total_tokens": {"$sum": "$tokens.total_tokens"},
+                    "input_tokens": {"$sum": "$tokens.input_tokens"},
+                    "output_tokens": {"$sum": "$tokens.output_tokens"},
                 }
             },
         ]
 
-        try:
-            result = await self.collection.aggregate(pipeline).to_list(1)
+        result = await self.collection.aggregate(pipeline).to_list(length=1)
 
-            if result:
-                doc = result[0]
-                return {
-                    "total_input_tokens": doc.get("total_input_tokens", 0),
-                    "total_output_tokens": doc.get("total_output_tokens", 0),
-                    "total_tokens": doc.get("total_tokens", 0),
-                }
-            else:
-                return {
-                    "total_input_tokens": 0,
-                    "total_output_tokens": 0,
-                    "total_tokens": 0,
-                }
-        except Exception as e:
-            logger.error(f"Error while getting token usage: {e}")
+        return {
+            "input_tokens": result[0]["input_tokens"],
+            "output_tokens": result[0]["output_tokens"],
+        }
 
 
 class AgentDatabase(MongoDBBase):
