@@ -9,7 +9,7 @@ def to_db_time(timestamp, format="%Y-%m-%d %H:%M:%S"):
     load_dotenv()
     try:
         user_timezone = pytz.timezone(os.getenv("USER_TIMEZONE"))
-        db_timezone = pytz.timezone(os.getenv("DB_TIMEZONE"))
+        db_timezone = pytz.timezone("UTC")
 
         if not user_timezone or not db_timezone:
             raise ValueError("USER_TIMEZONE and DB_TIMEZONE must be set in .env file")
