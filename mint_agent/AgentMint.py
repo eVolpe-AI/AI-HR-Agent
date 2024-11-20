@@ -272,7 +272,7 @@ class AgentMint:
         params = tool_data["params"]
         formatted_params = {}
 
-        def format_link(description, value, number=None):
+        def format_link(description, value):
             """Format a single link as HTML."""
             if description["reference_name"]:
                 module = tool_data["params"][description["reference_name"]]
@@ -280,11 +280,7 @@ class AgentMint:
                 module = description["module"]
             url, record_name = suite_connection.get_record_url(module, value, True)
 
-            link = (
-                f"<a href='{url}' target='_blank'>{record_name}</a>"
-                if number is None
-                else f"<a href='{url}' target='_blank'>{record_name}-{number}</a>"
-            )
+            link = f"<a href='{url}' target='_blank'>{record_name}</a>"
             return link
 
         def process_param(description, value):
@@ -297,7 +293,7 @@ class AgentMint:
                 case "link_array":
                     formatted_links = []
                     for num, link in enumerate(value):
-                        formatted_links.append(format_link(description, link, num + 1))
+                        formatted_links.append(format_link(description, link))
                     return " ".join(formatted_links)
                 case "text":
                     return value

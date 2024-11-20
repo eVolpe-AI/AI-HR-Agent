@@ -2,6 +2,7 @@ import atexit
 import json
 import math
 import uuid
+from typing import Union
 from urllib.parse import quote
 
 from oauthlib.oauth2 import (
@@ -166,20 +167,37 @@ class SuiteCRM:
 
     def get_record_url(
         self, module_name: str, record_id: str, return_name: bool = False
-    ) -> str:
+    ) -> Union[str, tuple[str, str]]:
         """
-        Gets the url of the record in the module.
+        Retrieves the URL of a specific record in the given module.
 
-        :param record_id: (string) id of the current module record.
+        :param module_name: (str) The name of the module containing the record.
+        :param record_id: (str) The ID of the record in the module.
+        :param return_name: (bool) If True, returns a tuple with the URL and the record name.
+                            Defaults to False.
 
-        :return: (string) The url of the record.
+        :return:
+            - If `return_name` is False: (str) The URL of the record.
+            - If `return_name` is True: (Tuple[str, str]) A tuple containing:
+                - (str) The URL of the record.
+                - (str) The name of the record, or a truncated module name if the name is not available.
         """
+
+        record = self.request(f"{self.baseurl}/module/{module_name}/{record_id}", "get")
+        record_name = record.get("data", {}).get("attributes", {}).get("name", "")
+
         url = self.baseurl.split("/legacy")[0]
         if return_name:
-            return (
-                f"{url}/#/modules/{module_name}/DetailView/{record_id}",
-                str(module_name)[:-1],
-            )
+            if record_name:
+                return (
+                    f"{url}/#/modules/{module_name}/DetailView/{record_id}",
+                    record_name,
+                )
+            else:
+                return (
+                    f"{url}/#/modules/{module_name}/DetailView/{record_id}",
+                    str(module_name)[:-1],
+                )
         return f"{url}/#/modules/{module_name}/DetailView/{record_id}"
 
     def get_modules(self) -> list:
