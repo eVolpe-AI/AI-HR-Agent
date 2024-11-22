@@ -117,20 +117,24 @@ class AgentMint:
             token_usage = await self.usage_tracker.get_token_usage(
                 int(usage_limit["hours"])
             )
-            model_pricing = ChatFactory.get_pricing_info(
-                self.state["provider"], self.state["model_name"]
-            )
 
-            user_spendings = sum(
-                Decimal(
-                    token_usage[category]
-                    / Decimal(TOKENS_PER_PRICE)
-                    * Decimal(model_pricing[category])
+            if token_usage is None:
+                return True
+
+            user_spending = 0
+
+            for (provider, model), tokens in token_usage.items():
+                model_pricing = ChatFactory.get_pricing_info(provider, model)
+
+                user_spending += sum(
+                    Decimal(
+                        tokens[category]
+                        / Decimal(TOKENS_PER_PRICE)
+                        * Decimal(model_pricing[category])
+                    )
+                    for category in ("input_tokens", "output_tokens")
                 )
-                for category in ("input_tokens", "output_tokens")
-            )
-
-            return user_spendings < Decimal(usage_limit["cost"])
+            return user_spending < Decimal(usage_limit["cost"])
 
         except KeyError as e:
             raise ValueError(f"Missing expected key: {e}") from e
@@ -256,8 +260,13 @@ class AgentMint:
                 if returns_usage_data:
                     usage_data = {
                         "tokens": event["data"]["output"].usage_metadata,
+                        "llm": {
+                            "provider": self.state["provider"],
+                            "model_name": self.state["model_name"],
+                        },
                         "timestamp": datetime.now(),
                     }
+                    usage_data["tokens"].pop("input_token_details")
                     await self.usage_tracker.push_token_usage(usage_data)
                     self.state["history_token_count"] = event["data"][
                         "output"
