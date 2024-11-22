@@ -49,6 +49,7 @@ class AgentMint:
         self.ip_addr = ip_addr
         self.is_advanced = is_advanced
         self.usage_limit = usage_limit
+        self.default_llm = ChatFactory.get_default_model(os.getenv("LLM_PROVIDER"))
 
         self.graph = create_graph(tools)
         self.app = compile_workflow(self.graph, user_id)
@@ -61,7 +62,7 @@ class AgentMint:
 
         self.history_config = HistoryManagement(
             management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
-            number_of_messages=15,
+            number_of_messages=10,
             number_of_tokens=430,
         )
 
@@ -85,10 +86,13 @@ class AgentMint:
                 messages=prev_state.values.get("messages", []),
                 user=self.user_id,
                 provider=os.environ.get("LLM_PROVIDER", "ANTHROPIC"),
-                model_name=os.environ.get("LLM_MODEL", "claude-3-haiku-20240307"),
+                model_name=prev_state.values.get(
+                    "model_name", os.environ.get("LLM_MODEL", "claude-3-haiku-20240307")
+                ),
                 tools=ToolController.get_default_tools(),
                 safe_tools=ToolController.get_safe_tools(),
                 tool_accept=prev_state.values.get("tool_accept", False),
+                tool_declines=prev_state.values.get("tool_declines", 0),
                 history_config=self.history_config,
                 conversation_summary=prev_state.values.get(
                     "conversation_summary", None
@@ -196,15 +200,46 @@ class AgentMint:
         Raises:
             ValueError: If the message type is unknown.
         """
+        decline_threshold = int(os.getenv("TOOL_DECLINE_THRESHOLD", "10"))
+        switch_llm_model = (
+            os.getenv("SWITCH_LLM_MODEL", "False").strip().lower() == "true"
+        )
+
+        def switch_to_smarter_model():
+            smarter_model = ChatFactory.get_smarter_model(
+                self.state["provider"], self.state["model_name"]
+            )
+            if smarter_model:
+                logger.info(f"Switching to smarter model: {smarter_model}")
+                self.state["model_name"] = smarter_model
+                self.state["tool_declines"] = 0
+
         match message.type:
             case UserMessageType.INPUT.value:
                 self.state["messages"].append(
                     HumanMessage(content=f"{message.content}")
                 )
                 self.state["tool_accept"] = False
+
             case UserMessageType.TOOL_CONFIRM.value:
                 self.state["tool_accept"] = True
+                if self.state["model_name"] != self.default_llm:
+                    logger.info("Switching back to default model.")
+                    self.state["model_name"] = ChatFactory.get_default_model(
+                        self.state["provider"]
+                    )
+                self.state["tool_declines"] = 0
+
             case UserMessageType.TOOL_REJECT.value:
+                self.state["tool_declines"] += 1
+
+                if (
+                    switch_llm_model
+                    and self.state["tool_declines"] >= decline_threshold
+                ):
+                    switch_to_smarter_model()
+                    self.state["tool_declines"] = 0
+
                 tool_call_message = self.state["messages"][-1].tool_calls[0]
                 self.state["tool_accept"] = False
                 self.state["messages"].append(
@@ -218,6 +253,7 @@ class AgentMint:
                         content=f"I rejected the use of the tool {tool_call_message["name"]} {f"because: {message.content}." if message.content else "and i don't want to provide a reason."}"
                     )
                 )
+
             case _:
                 raise ValueError(f"Unknown message type: {message.type}")
 

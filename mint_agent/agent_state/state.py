@@ -81,18 +81,49 @@ class HistoryManagement(TypedDict):
 
 class GraphState(TypedDict):
     """
-    TypedDict representing the state of a graph in the agent.
+    A TypedDict representing the state of a conversation graph in the agent,
+    managing tools, messages, and configuration settings.
 
     Attributes:
-        messages: A list of messages exchanged in the conversation with standard langgraph add_messages reducer.
-        safe_tools: A list of safe tools available for the agent.
-        tool_accept: A boolean indicating whether the tool is accepted - used for tool acceptance flow.
-        user: The user associated with the graph state.
-        model: The llm model used for the conversation.
-        history_config: The configuration for history management.
-        conversation_summary: A summary of the conversation.
-        system_prompt: The system prompt used in the conversation.
-        history_token_count: The count of tokens for messages in the current conversation history.
+        messages (list):
+            A list of messages exchanged during the conversation.
+            These messages are processed using the standard langgraph `add_messages` reducer.
+
+        safe_tools (list[str]):
+            A list of tools deemed safe for the agent to use during the conversation.
+
+        tool_accept (bool):
+            Indicates whether the tool is accepted in the tool acceptance flow.
+
+        user (str):
+            The identifier of the user associated with this graph state.
+
+        provider (str):
+            The name of the service provider for the LLM or tool functionality.
+
+        model_name (str):
+            The specific LLM model used for the conversation.
+
+        history_config (HistoryManagement):
+            Configuration settings for managing conversation history, such as retention policies or limits.
+
+        conversation_summary (str):
+            A summary of the conversation, generated for contextual awareness or history optimization. This may be `None` if not yet generated.
+
+        system_prompt (str):
+            The initial system prompt used to guide the conversation's tone, behavior, or purpose.
+
+        history_token_count (int):
+            The total number of tokens in the current conversation history, used for monitoring and optimizing token usage.
+
+        usage_limit (dict):
+            A dictionary defining usage limits or quotas for tools or other resources in the conversation.
+
+        tools (list[Any]):
+            A list of all tools available for the agent, which may include additional metadata or tool properties.
+
+        tool_declines (int):
+            The count of consecutive tool rejections by the user, used to trigger model adjustments.
     """
 
     messages: Annotated[list, add_messages]
@@ -107,6 +138,7 @@ class GraphState(TypedDict):
     history_token_count: int
     usage_limit: dict
     tools: list[Any]
+    tool_declines: int
 
     def __init__(
         self,
@@ -121,6 +153,7 @@ class GraphState(TypedDict):
         tools: list[Any],
         usage_limit: dict,
         history_token_count: int,
+        tool_declines: int = 0,
         conversation_summary: str = None,
     ):
         self.messages = messages
@@ -135,3 +168,4 @@ class GraphState(TypedDict):
         self.history_token_count = history_token_count
         self.tools = tools
         self.usage_limit = usage_limit
+        self.tool_declines = tool_declines
