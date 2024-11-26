@@ -14,7 +14,7 @@ class MintCreateMeetingInput(BaseModel):
         ...,
         description="Name of the module in Mint in which the record is to be created",
     )
-    attributes: Dict[str, Any] = Field(
+    attributes: Optional[Dict[str, Any]] = Field(
         ...,
         description="""
     Record attributes in key-value format, value CAN NOT be a list.

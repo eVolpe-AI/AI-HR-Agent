@@ -49,7 +49,7 @@ class OpenAIController(BaseController):
         )
 
         if tools:
-            self.client.bind_tools(tools)
+            self.client = self.client.bind_tools(tools)
 
     async def get_output(self, messages):
         return await self.client.ainvoke(messages)

@@ -52,8 +52,8 @@ class ChatFactory:
             # "claude-3-opus-20240229",
         ],
         "OPENAI": [
-            "gpt-4o-mini-2024-07-18"
-            # "gpt4o",
+            "gpt-4o-mini-2024-07-18",
+            # "gpt-4o",
         ],
     }
 
