@@ -259,15 +259,9 @@ class AgentMint:
 
         suite_connection = MintBaseTool().get_connection(self.config)
         tool_name = tool_data["tool"]
-        tool_fields_info = ToolController.available_tools[
+        tool_info, request_message = ToolController.available_tools[
             tool_name
         ].get_tool_fields_info()
-
-        tool_info, request_message = (
-            tool_fields_info
-            if isinstance(tool_fields_info, tuple)
-            else (tool_fields_info, None)
-        )
 
         params = tool_data["params"]
         formatted_params = {}
