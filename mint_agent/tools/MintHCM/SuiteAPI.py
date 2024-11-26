@@ -404,8 +404,7 @@ class Module:
 
         :return: (dictionary) A record that the relationship was created.
         """
-        # Post
-        url = f"/module/{self.module_name}/{record_id}/relationships"
+        url = f"/module/{self.module_name}/{record_id}/relationships/{related_module_name.lower()}"
         data = {"type": related_module_name.capitalize(), "id": related_bean_id}
         return self.suitecrm.request(f"{self.suitecrm.baseurl}{url}", "post", data)
 

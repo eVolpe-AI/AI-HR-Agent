@@ -35,7 +35,7 @@ class MintGetRelTool(BaseTool, MintBaseTool):
         try:
             suitecrm = self.get_connection(config)
             module = Module(suitecrm, base_module)
-            result = module.get_relationship(related_module, record_id)
+            result = module.get_relationship(record_id, related_module)
             return tool_response(result)
         except Exception as e:
             return {"status": "error", "message": str(e)}

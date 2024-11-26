@@ -11,13 +11,13 @@ from mint_agent.tools.MintHCM.SuiteAPI import Module
 
 class MintCreateRelInput(BaseModel):
     record_id: str = Field(
-        ..., description="ID of the record to create a relationship from"
+        ..., description="ID of the record to create a relationship for"
     )
     base_module: str = Field(
-        ..., description="Name of the module in which the record is present"
+        ..., description="Name of the module in which the base record is present"
     )
     related_module: str = Field(..., description="Name of the related module")
-    related_id: str = Field(..., description="ID of the related record")
+    related_id: str = Field(..., description="ID of the record in related module")
 
 
 class MintCreateRelTool(BaseTool, MintBaseTool):
@@ -40,7 +40,7 @@ class MintCreateRelTool(BaseTool, MintBaseTool):
 
             module = Module(suitecrm, base_module)
 
-            result = module.create_relationship(related_module, related_id, record_id)
+            result = module.create_relationship(record_id, related_module, related_id)
             return tool_response(result)
         except Exception as e:
             return {"status": "error", "message": str(e)}
