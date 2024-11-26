@@ -87,8 +87,7 @@ class ChatFactory:
     @staticmethod
     def get_pricing_info(provider: str, model_name: str) -> dict:
         try:
-            pricing = ChatFactory.models[provider][model_name]["pricing"]
-            return pricing
+            return ChatFactory.models[provider][model_name]["pricing"]
         except:
             raise ValueError(f"Pricing for model {model_name} not found")
 
