@@ -1,5 +1,6 @@
 import os
 
+from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
@@ -48,6 +49,8 @@ class CredentialManager:
             and credential type or tuple of None if not found or error occurred.
 
         """
+        KEY = os.getenv("FERNET_KEY").encode()
+        f = Fernet(KEY)
         try:
             match system:
                 case "MintHCM":
@@ -74,7 +77,7 @@ class CredentialManager:
                         credential = user_data["user_credentials"][0]
                         client_id = credential["credentials"]["client_id"]
                         secret = credential["credentials"]["secret"]
-                        return client_id, secret
+                        return client_id, f.decrypt(secret).decode()
                     raise ValueError("Credentials not found")
                 case _:
                     raise ValueError(f"System '{system}' not supported")

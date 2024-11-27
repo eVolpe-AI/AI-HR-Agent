@@ -131,6 +131,9 @@ websockets = "13.0"
 win32-setctime = {version = "1.1.0", markers = "platform_system == \"Windows\""}
 yarg = "0.1.9"
 yarl = "1.9.4"
+cryptography = "^43.0.3"
+inquirer = "^3.4.0"
+termcolor = "^2.5.0"
 
 
 [build-system]
@@ -142,4 +145,4 @@ dev = "mint_agent.server:dev"
 prod = "mint_agent.server:prod"
 test_chat = "mint_agent.server:test_chat"
 generate_credentials = "mint_agent.utils.generate_credentials:generate_credentials"
-
+generate_key = "mint_agent.utils.generate_credentials:generate_encryption_key"
