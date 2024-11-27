@@ -14,7 +14,7 @@ class ProviderConfig:
 
     config = {
         "ANTHROPIC": {"returns_usage_data": True},
-        "OPENAI": {"returns_usage_data": False},
+        "OPENAI": {"returns_usage_data": True},
     }
 
     @staticmethod

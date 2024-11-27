@@ -256,22 +256,23 @@ class AgentMint:
                     self.state["provider"], "returns_usage_data"
                 )
                 self.state["messages"].append(event["data"]["output"])
-
-                if returns_usage_data:
-                    usage_data = {
-                        "tokens": event["data"]["output"].usage_metadata,
-                        "llm": {
-                            "provider": self.state["provider"],
-                            "model_name": self.state["model_name"],
-                        },
-                        "timestamp": datetime.now(),
-                    }
-                    usage_data["tokens"].pop("input_token_details")
-                    await self.usage_tracker.push_token_usage(usage_data)
-                    self.state["history_token_count"] = event["data"][
-                        "output"
-                    ].usage_metadata["input_tokens"]
-                    self.agent_logger.set_usage_data(usage_data)
+                print(f"Event: {event}")
+                # if returns_usage_data:
+                #     usage_data = {
+                #         "tokens": event["data"]["output"].usage_metadata,
+                #         "llm": {
+                #             "provider": self.state["provider"],
+                #             "model_name": self.state["model_name"],
+                #         },
+                #         "timestamp": datetime.now(),
+                #     }
+                #     if usage_data["tokens"].get("input_token_details"):
+                #         usage_data["tokens"].pop("input_token_details")
+                #     await self.usage_tracker.push_token_usage(usage_data)
+                #     self.state["history_token_count"] = event["data"][
+                #         "output"
+                #     ].usage_metadata["input_tokens"]
+                #     self.agent_logger.set_usage_data(usage_data)
             case "on_tool_start":
                 if self.is_advanced:
                     output = AgentMessage(
