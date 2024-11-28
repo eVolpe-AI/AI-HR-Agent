@@ -11,7 +11,7 @@ from mint_agent.tools.MintHCM.SuiteAPI import Module, SuiteCRM
 
 class MintGetUsersTool(BaseTool, MintBaseTool):
     name: str = "MintGetUsersTool"
-    description: str = "Tool to retrieve list of users in MintHCM. Use this to get list of users in MintHCM and their details such as id, name, phone numbers, email, adress etc."
+    description: str = "Tool to retrieve list of users in MintHCM. Use this to get list of users in MintHCM and their details such as id, name, phone numbers, email, address etc."
 
     def _run(
         self,

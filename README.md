@@ -1,3 +1,8 @@
+# AI-HR-Agent
+AI HR Agent is first free and open-source AI chatbot for HCM System (e.g. [MintHCM](https://github.com/minthcm/minthcm/)) created by [eVolpe.ai](https://evolpe.ai) 
+
+You can use this chatbot to search for and change information in your MintHCM system.
+
 Designed to simplify and streamline your workflow, our AI agent allows you to use natural language to communicate directly with your MintHCM system.
 
 Accessible via a WebSocket API, our agent acts as an external server that utilizes MintHCM API and direct Mint database calls to get things done. And the best part? You interact with it using an intuitive chat widget inside MintHCM.
@@ -120,7 +125,7 @@ At the moment, there are 4 types of message history management available for LLM
 
 1. **Prerequisites**: Ensure you have Node.js installed on your system. The supported Node.js versions range from v16 to v21. If you haven't installed Node.js yet, you can use the <a href="https://github.com/nodesource/distributions" target="_blank">NodeSource installer</a> to set it up.
 
-2. Install <a href="#" target="_blank">mint_agent_package</a> via Module Loader TODO:
+2. Install <a href="https://github.com/eVolpe-AI/AI-HR-MintHCM-Package" target="_blank">mint_agent_package</a> via Module Loader
 
 3. Navigate to the `vue` directory:
     ```
