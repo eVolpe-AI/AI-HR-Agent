@@ -95,23 +95,26 @@ At the moment, there are 4 types of message history management available for LLM
 
 4. Copy `.env_example` as `.env` and fill in required fields
 
+5. Generate encryption key with:
+    ```
+    poetry run generate_key
+    ```
 
 5. Setting up credentials:
-    1. Copy `mint_agent/credentials.json_example` as `mint_agent/credentials.json`.
+    1. Follow this <a href="https://minthcm.org/support/how-to-use-mint-api/" target="_blank">instruction</a> on how to get `client_id` and `secret` for your user.
 
-    2. Fill in the required fields:
-      Open mint_agent/credentials.json in a text editor and replace the placeholder values: `<user_id>`, `<mint_user_id>`, `<client_id>`, `<client_secret>` with your actual information.
-        * `_id`: The unique identifier for the user in the Agent mongoDB database.
-        * `mint_user_id`: The user’s ID within the MintHCM system.
-        * `client_id`: The API client ID for accessing MintHCM.
-        * `secret`: The API secret key associated with the client ID.
+    1. Run script to add user credentials to agent database:
+      ```
+      poetry run generate_credentials
+      ```
+
+      * `user name`: The user_name used in MintHCM
+      * `mint_user_id`: The user’s ID within the MintHCM system.
+      * `client_id`: The API client ID for accessing MintHCM.
+      * `client secret`: The API secret key associated with the client ID.
         
-        Follow this <a href="https://minthcm.org/support/how-to-use-mint-api/" target="_blank">instruction</a> on how to get `client_id` and `secret` for your user.
+        
 
-    2. Run script to populate database:
-        ```sh
-        poetry run generate_credentials
-        ```
 
 ### MintHCM Agent package
 
