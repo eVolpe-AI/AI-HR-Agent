@@ -14,7 +14,7 @@ class MintCreateMeetingInput(BaseModel):
         ...,
         description="Name of the module in Mint in which the record is to be created",
     )
-    attributes: Dict[str, Any] = Field(
+    attributes: Optional[Dict[str, Any]] = Field(
         ...,
         description="""
     Record attributes in key-value format, value CAN NOT be a list.
@@ -28,7 +28,7 @@ class MintCreateMeetingInput(BaseModel):
     If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM.
     """,
     )
-    candidates: List[str] = Field(
+    candidates: Optional[List[str]] = Field(
         ...,
         description="""
     List of ids of candidates to the meeting. Example: ['26c2081a-1f55-66f7-7b49-6662ef7ab388','68339282-a9f3-ed1d-7ffe-662f6fadd1a9']

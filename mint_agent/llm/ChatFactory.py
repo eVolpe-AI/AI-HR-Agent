@@ -4,41 +4,6 @@ from mint_agent.llm.AnthropicController import AnthropicController
 from mint_agent.llm.OpenAIController import OpenAIController
 
 
-class ProviderConfig:
-    """
-    Configuration class for different providers.
-
-    This class holds configuration details for various providers and allows
-    retrieval of specific parameters for each provider.
-    """
-
-    config = {
-        "ANTHROPIC": {"returns_usage_data": True},
-        "OPENAI": {"returns_usage_data": True},
-    }
-
-    @staticmethod
-    def get_param(provider: str, param: str) -> any:
-        """
-        Retrieve a specific parameter for a given provider.
-
-        Args:
-            provider (str): The name of the provider.
-            param (str): The parameter to retrieve.
-
-        Returns:
-            any: The value of the requested parameter.
-
-        Raises:
-            ValueError: If the provider or parameter is not supported.
-        """
-        if provider not in ProviderConfig.config:
-            raise ValueError(f"Provider {provider} not supported")
-        if param not in ProviderConfig.config[provider]:
-            raise ValueError(f"Param {param} not supported for provider {provider}")
-        return ProviderConfig.config[provider][param]
-
-
 class ChatFactory:
     model_controllers = {
         "ANTHROPIC": AnthropicController,
@@ -48,18 +13,26 @@ class ChatFactory:
     models = {
         "ANTHROPIC": {
             "claude-3-haiku-20240307": {
-                "pricing": {"input_tokens": 0.25, "output_tokens": 1.25},
+                "pricing": {
+                    "input_tokens": 0.25,
+                    "output_tokens": 1.25,
+                    "cache_reads": 0,
+                },
             },
             "claude-3-5-haiku-20241022": {
-                "pricing": {"input_tokens": 1, "output_tokens": 5},
+                "pricing": {"input_tokens": 1, "output_tokens": 5, "cache_reads": 0},
             },
             "claude-3-5-sonnet-20241022": {
-                "pricing": {"input_tokens": 3, "output_tokens": 15},
+                "pricing": {"input_tokens": 3, "output_tokens": 15, "cache_reads": 0},
             },
         },
         "OPENAI": {
             "gpt-4o-mini-2024-07-18": {
-                "pricing": {"input_tokens": 0.15, "output_tokens": 0.6},
+                "pricing": {
+                    "input_tokens": 0.15,
+                    "output_tokens": 0.6,
+                    "cache_reads": 0.075,
+                },
             }
         },
     }

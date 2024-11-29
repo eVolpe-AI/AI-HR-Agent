@@ -269,6 +269,25 @@ class MongoDBUsageTracker(MongoDBBase):
                     },
                     "input_tokens": {"$sum": "$tokens.input_tokens"},
                     "output_tokens": {"$sum": "$tokens.output_tokens"},
+                    "cache_reads": {
+                        "$sum": {
+                            "$cond": [
+                                {
+                                    "$ifNull": [
+                                        "$tokens.input_token_details.cache_read",
+                                        False,
+                                    ]
+                                },
+                                "$tokens.input_token_details.cache_read",
+                                0,
+                            ]
+                        }
+                    },
+                }
+            },
+            {
+                "$addFields": {
+                    "input_tokens": {"$subtract": ["$input_tokens", "$cache_reads"]}
                 }
             },
         ]
@@ -283,9 +302,11 @@ class MongoDBUsageTracker(MongoDBBase):
                 token_usage[(provider, model_name)] = {
                     "input_tokens": doc["input_tokens"],
                     "output_tokens": doc["output_tokens"],
+                    "cache_reads": doc.get("cache_reads", 0),
                 }
         else:
             token_usage = None
+
         return token_usage
 
 
