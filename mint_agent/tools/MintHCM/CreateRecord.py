@@ -5,16 +5,27 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import BaseTool, ToolException
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
+from mint_agent.tools.MintHCM.BaseTool import (
+    MintBaseTool,
+    ToolFieldDescription,
+    tool_response,
+)
 
 
 class MintCreateDataInput(BaseModel):
     module_name: str = Field(
         ...,
         description="Name of the module in Mint in which the record is to be created",
+        json_schema_extra={
+            "field_description": ToolFieldDescription("Module"),
+        },
     )
     attributes: Dict[str, Any] = Field(
-        ..., description="Record attributes in key-value format"
+        ...,
+        description="Record attributes in key-value format",
+        json_schema_extra={
+            "field_description": ToolFieldDescription({}, "dict", "Attributes"),
+        },
     )
 
 
@@ -23,6 +34,7 @@ class MintCreateRecordTool(BaseTool, MintBaseTool):
     description: str = """General Tool to create new record in MintHCM modules, for example  new employees, new candidates etc.
     Dont use this tool for meetings. Use MintCreateMeetingTool for meetings.
     Dont use this tool without knowing the fields available in the module. Use MintGetModuleFieldsTool to get list of fields available in the module."""
+    request_message: str = "Agent wants to create a record"
     args_schema: Type[BaseModel] = MintCreateDataInput
 
     def _run(

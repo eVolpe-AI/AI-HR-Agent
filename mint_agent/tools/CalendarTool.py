@@ -7,16 +7,19 @@ from langchain.callbacks.manager import (
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import tool_response
+from mint_agent.tools.MintHCM.BaseTool import (
+    ToolUtils,
+    tool_response,
+)
 
 
 class CalendarInput(BaseModel):
     format: str = Field(
-        description=" Date format to be returned. Default is YYYY-MM-DD (Day)"
+        description="Date format to be returned. Default is YYYY-MM-DD (Day)",
     )
 
 
-class CalendarTool(BaseTool):
+class CalendarTool(BaseTool, ToolUtils):
     name: str = "CalendarTool"
     description: str = "Useful for when you need to know current date. Input should be a date format. Always use this tool to get the current date if you are asked questions regarding today, yesterday, tomorrow etc."
     args_schema: Type[BaseModel] = CalendarInput

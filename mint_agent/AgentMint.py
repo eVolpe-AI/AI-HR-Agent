@@ -21,6 +21,7 @@ from mint_agent.agent_state.state import (
 )
 from mint_agent.database.db_utils import MongoDBUsageTracker
 from mint_agent.llm.ChatFactory import ProviderConfig
+from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
 from mint_agent.tools.ToolController import ToolController
 from mint_agent.utils.AgentLogger import AgentLogger
 
@@ -233,9 +234,11 @@ class AgentMint:
                     )
             case "on_custom_event":
                 if event["name"] == "tool_accept":
+                    request_message = self.prepare_tool_request(event["data"])
+
                     output = AgentMessage(
                         type=AgentMessageType.ACCEPT_REQUEST,
-                        tool_input=event["data"]["params"],
+                        tool_input=request_message,
                         tool_name=event["data"]["tool"],
                     )
                 elif event["name"] == "tool_url":
@@ -245,3 +248,90 @@ class AgentMint:
                     )
 
         return output
+
+    def prepare_tool_request(self, tool_data: dict) -> dict:
+        """
+        Prepares a human-readable description for a given tool by processing tool data.
+
+        :param tool_data: Dictionary containing tool-specific information.
+        :return: Dictionary of tool descriptions formatted as HTML for readability.
+        """
+
+        suite_connection = MintBaseTool().get_connection(self.config)
+        tool_name = tool_data["tool"]
+        tool_info, request_message = ToolController.available_tools[
+            tool_name
+        ].get_tool_fields_info()
+
+        params = tool_data["params"]
+        formatted_params = {}
+
+        def format_link(description, value):
+            """Format a single link as HTML."""
+            if description["reference_name"]:
+                module = tool_data["params"][description["reference_name"]]
+            else:
+                module = description["module"]
+            url, record_name = suite_connection.get_record_url(module, value, True)
+
+            link = f"<a href='{url}' target='_blank'>{record_name}</a>"
+            return link
+
+        def process_param(description, value):
+            """Process a single parameter description and value."""
+            param_type = description["field_type"]
+
+            match param_type:
+                case "link":
+                    return format_link(description, value)
+                case "link_array":
+                    formatted_links = []
+                    for num, link in enumerate(value):
+                        formatted_links.append(format_link(description, link))
+                    return " ".join(formatted_links)
+                case "text":
+                    return value
+                case _:
+                    logger.warning(f"Unknown parameter description type: {param_type}")
+
+        for param_name, param_value in params.items():
+            param_description = tool_info.get(param_name)
+            if not param_description:
+                logger.warning(f"Description for parameter '{param_name}' not found.")
+                continue
+
+            if param_description.get("show") is False:
+                continue
+
+            if param_description["field_type"] == "dict":
+                additional_params = {}
+                for attr_name, attr_value in param_value.items():
+                    attr_description = param_description["description"].get(attr_name)
+                    if attr_description:
+                        formatted_params[attr_description["description"]] = (
+                            process_param(attr_description, attr_value)
+                        )
+                    else:
+                        additional_params[attr_name] = attr_value
+                        logger.warning(
+                            f"Description for attribute '{attr_name}' in {param_name} not found."
+                        )
+                if additional_params:
+                    formatted_params[param_description["additional_params"]] = (
+                        additional_params
+                    )
+            elif param_value:
+                formatted_params[param_description["description"]] = process_param(
+                    param_description, param_value
+                )
+
+        html_formatted_description = (
+            f"<strong>{request_message}</strong><br><br>"
+            if request_message
+            else f"<strong>{tool_name} Request</strong><br><br>"
+        )
+
+        for param_name, param_value in formatted_params.items():
+            html_formatted_description += f"<b>{param_name}:</b> {param_value} <br>"
+
+        return html_formatted_description

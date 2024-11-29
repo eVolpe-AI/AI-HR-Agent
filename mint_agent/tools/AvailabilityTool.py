@@ -9,7 +9,7 @@ from langchain_core.runnables.config import RunnableConfig
 from mysql.connector import Error
 from pydantic import BaseModel, Field
 
-from mint_agent.tools.MintHCM.BaseTool import tool_response
+from mint_agent.tools.MintHCM.BaseTool import ToolUtils, tool_response
 
 load_dotenv()
 
@@ -27,7 +27,7 @@ class AvailabilityInput(BaseModel):
     )
 
 
-class AvailabilityTool(BaseTool):
+class AvailabilityTool(BaseTool, ToolUtils):
     name: str = "AvailabilityTool"
     description: str = """
         Useful when you want to check the availability of a person. This tool returns information about times when user is not available due to meetings and/or calls. 
