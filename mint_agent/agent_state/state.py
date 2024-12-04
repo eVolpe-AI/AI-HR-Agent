@@ -97,6 +97,7 @@ class GraphState(TypedDict):
 
     messages: Annotated[list, add_messages]
     safe_tools: list[str]
+    tool_decision: str
     tool_accept: bool
     user: str
     provider: str
@@ -114,6 +115,7 @@ class GraphState(TypedDict):
         user: str,
         provider: str,
         model_name: str,
+        tool_decision: str,
         tool_accept: bool,
         history_config: HistoryManagement,
         system_prompt: str,
@@ -123,6 +125,7 @@ class GraphState(TypedDict):
     ):
         self.messages = messages
         self.safe_tools = safe_tools
+        self.tool_decision = tool_decision
         self.tool_accept = tool_accept
         self.user = user
         self.provider = provider

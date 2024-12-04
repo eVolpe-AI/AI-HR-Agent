@@ -165,6 +165,25 @@ class SuiteCRM:
 
         return json.loads(data.content)
 
+    def verify_record_exists(self, record_id: str, module_name: str) -> bool:
+        """
+        Verifies if a record exists in the module.
+
+        :param record_id: (string) id of the current module record.
+        :param module_name: (string) the module name you want to search for the record in.
+
+        :return: (boolean) True if the record exists, False if it does not.
+        """
+        url = f"/module/{module_name}/{record_id}"
+        response = self.request(f"{self.baseurl}{url}", "get")
+        errors = response.get("errors")
+        if errors:
+            if errors.get("status") == 400:
+                return False
+            raise Exception(errors)
+
+        return True
+
     def get_record_url(
         self, module_name: str, record_id: str, return_name: bool = False
     ) -> Union[str, tuple[str, str]]:
