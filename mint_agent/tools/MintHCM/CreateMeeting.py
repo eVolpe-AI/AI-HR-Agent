@@ -15,10 +15,6 @@ from mint_agent.tools.MintHCM.BaseTool import (
 
 
 class MintCreateMeetingInput(BaseModel):
-    module_name: str = Field(
-        ...,
-        description="Name of the module in Mint in which the record is to be created",
-    )
     attributes: Optional[Dict[str, Any]] = Field(
         ...,
         description="""
@@ -51,7 +47,7 @@ class MintCreateMeetingInput(BaseModel):
             ),
         },
     )
-    candidates: List[str] = Field(
+    candidates: Optional[List[str]] = Field(
         ...,
         description="""
     List of ids of candidates to the meeting. Example: ['26c2081a-1f55-66f7-7b49-6662ef7ab388','68339282-a9f3-ed1d-7ffe-662f6fadd1a9']
