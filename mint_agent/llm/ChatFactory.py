@@ -46,15 +46,22 @@ class ChatFactory:
     }
 
     models = {
-        "ANTHROPIC": [
-            "claude-3-haiku-20240307",
-            # "claude-3-sonnet-20240229",
-            # "claude-3-opus-20240229",
-        ],
-        "OPENAI": [
-            "gpt-4o-mini-2024-07-18",
-            # "gpt-4o",
-        ],
+        "ANTHROPIC": {
+            "claude-3-haiku-20240307": {
+                "pricing": {"input_tokens": 0.25, "output_tokens": 1.25},
+            },
+            "claude-3-5-haiku-20241022": {
+                "pricing": {"input_tokens": 1, "output_tokens": 5},
+            },
+            "claude-3-5-sonnet-20241022": {
+                "pricing": {"input_tokens": 3, "output_tokens": 15},
+            },
+        },
+        "OPENAI": {
+            "gpt-4o-mini-2024-07-18": {
+                "pricing": {"input_tokens": 0.15, "output_tokens": 0.6},
+            }
+        },
     }
 
     @staticmethod
@@ -66,6 +73,9 @@ class ChatFactory:
         if provider not in ChatFactory.model_controllers:
             raise ValueError(f"Model provider {provider} not supported")
 
+        if provider not in ChatFactory.models:
+            raise ValueError(f"No models available for provider {provider}")
+
         if model_name not in ChatFactory.models[provider]:
             raise ValueError(
                 f"Model {model_name} not supported for provider {provider}"
@@ -73,6 +83,13 @@ class ChatFactory:
 
         controller_class = ChatFactory.model_controllers[provider]
         return controller_class(model_name=model_name, tools=tools)
+
+    @staticmethod
+    def get_pricing_info(provider: str, model_name: str) -> dict:
+        try:
+            return ChatFactory.models[provider][model_name]["pricing"]
+        except:
+            raise ValueError(f"Pricing for model {model_name} not found")
 
     @staticmethod
     def get_models(provider: str) -> list[str]:

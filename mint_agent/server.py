@@ -144,7 +144,12 @@ async def websocket_endpoint(
             os.getenv("MONGO_DB_NAME"),
             user_id,
         )
-        user_data = await agent_db.get(["mint_user_id"])
+        user_data = await agent_db.get(["mint_user_id", "usage_limit"])
+
+        usage_limit = user_data.get("usage_limit") or {
+            "cost": os.getenv("DEFAULT_COST_LIMIT"),
+            "hours": os.getenv("DEFAULT_COST_LIMIT_HOURS"),
+        }
 
         agent = AgentMint(
             user_id=user_id,
@@ -152,6 +157,7 @@ async def websocket_endpoint(
             chat_id=chat_id,
             ip_addr=websocket.client.host,
             is_advanced=advanced,
+            usage_limit=usage_limit,
         )
         while True:
             incoming_message = await websocket.receive_json()

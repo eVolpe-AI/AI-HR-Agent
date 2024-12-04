@@ -106,6 +106,7 @@ class GraphState(TypedDict):
     conversation_summary: str
     system_prompt: str
     history_token_count: int
+    usage_limit: dict
     tools: list[Any]
     is_advanced: bool
 
@@ -121,6 +122,7 @@ class GraphState(TypedDict):
         history_config: HistoryManagement,
         system_prompt: str,
         tools: list[Any],
+        usage_limit: dict,
         history_token_count: int,
         conversation_summary: str = None,
         is_advanced: bool = False,
@@ -138,3 +140,4 @@ class GraphState(TypedDict):
         self.history_token_count = history_token_count
         self.tools = tools
         self.is_advanced = is_advanced
+        self.usage_limit = usage_limit

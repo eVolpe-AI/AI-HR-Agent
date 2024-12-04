@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import AsyncGenerator
 
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ from mint_agent.agent_state.state import (
     HistoryManagementType,
 )
 from mint_agent.database.db_utils import MongoDBUsageTracker
-from mint_agent.llm.ChatFactory import ProviderConfig
+from mint_agent.llm.ChatFactory import ChatFactory, ProviderConfig
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
 from mint_agent.tools.ToolController import ToolController
 from mint_agent.utils.AgentLogger import AgentLogger
@@ -40,6 +41,7 @@ class AgentMint:
         chat_id: str,
         ip_addr: str,
         is_advanced: bool,
+        usage_limit: dict,
     ) -> None:
         tools = ToolController.get_tools()
         self.state = None
@@ -47,6 +49,7 @@ class AgentMint:
         self.user_id = user_id
         self.ip_addr = ip_addr
         self.is_advanced = is_advanced
+        self.usage_limit = usage_limit
 
         self.graph = create_graph(tools)
         self.app = compile_workflow(self.graph, user_id)
@@ -91,6 +94,7 @@ class AgentMint:
                 conversation_summary=prev_state.values.get(
                     "conversation_summary", None
                 ),
+                usage_limit=self.usage_limit,
                 system_prompt=prev_state.values.get("system_prompt", None),
                 history_token_count=prev_state.values.get("history_token_count", 0),
                 is_advanced=self.is_advanced,
@@ -106,6 +110,40 @@ class AgentMint:
         self.app.get_graph().draw_mermaid_png(
             output_file_path="mint_agent/utils/graph_schema.png"
         )
+
+    async def is_within_usage_limit(self) -> bool:
+        """
+        Check if the user has reached their usage limit.
+        """
+        TOKENS_PER_PRICE = 1_000_000
+        try:
+            usage_limit = self.state["usage_limit"]
+            token_usage = await self.usage_tracker.get_token_usage(
+                int(usage_limit["hours"])
+            )
+
+            if token_usage is None:
+                return True
+
+            user_spending = 0
+
+            for (provider, model), tokens in token_usage.items():
+                model_pricing = ChatFactory.get_pricing_info(provider, model)
+
+                user_spending += sum(
+                    Decimal(
+                        tokens[category]
+                        / Decimal(TOKENS_PER_PRICE)
+                        * Decimal(model_pricing[category])
+                    )
+                    for category in ("input_tokens", "output_tokens")
+                )
+            return user_spending < Decimal(usage_limit["cost"])
+
+        except KeyError as e:
+            raise ValueError(f"Missing expected key: {e}") from e
+        except Exception as e:
+            raise RuntimeError("An error occurred while checking usage limits.") from e
 
     async def invoke(self, message: UserMessage) -> AsyncGenerator[str, None]:
         """
@@ -123,24 +161,34 @@ class AgentMint:
         await self.set_state()
         self.agent_logger.start(self.state)
 
-        try:
-            self.handle_message(message)
+        if not await self.is_within_usage_limit():
             yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
-
-            async for event in self.app.astream_events(
-                input=self.state, version="v2", config=self.config
-            ):
-                output = await self.handle_graph_event(event)
-                if output is not None:
-                    yield output.to_json()
+            yield AgentMessage(type=AgentMessageType.LLM_START).to_json()
+            yield AgentMessage(
+                type=AgentMessageType.LLM_TEXT,
+                content="You have reached your usage limit. Please try again later.",
+            ).to_json()
+            yield AgentMessage(type=AgentMessageType.LLM_END).to_json()
             yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
-        except Exception as e:
-            await self.set_state()
-            self.agent_logger.end_error(self.state, e)
-            raise
+        else:
+            try:
+                self.handle_message(message)
+                yield AgentMessage(type=AgentMessageType.AGENT_START).to_json()
 
-        await self.set_state()
-        self.agent_logger.end(self.state)
+                async for event in self.app.astream_events(
+                    input=self.state, version="v2", config=self.config
+                ):
+                    output = await self.handle_graph_event(event)
+                    if output is not None:
+                        yield output.to_json()
+                yield AgentMessage(type=AgentMessageType.AGENT_END).to_json()
+            except Exception as e:
+                await self.set_state()
+                self.agent_logger.end_error(self.state, e)
+                raise
+
+            await self.set_state()
+            self.agent_logger.end(self.state)
 
     def handle_message(self, message: UserMessage) -> None:
         """
@@ -216,8 +264,13 @@ class AgentMint:
                 if returns_usage_data:
                     usage_data = {
                         "tokens": event["data"]["output"].usage_metadata,
+                        "llm": {
+                            "provider": self.state["provider"],
+                            "model_name": self.state["model_name"],
+                        },
                         "timestamp": datetime.now(),
                     }
+                    usage_data["tokens"].pop("input_token_details")
                     await self.usage_tracker.push_token_usage(usage_data)
                     self.state["history_token_count"] = event["data"][
                         "output"
@@ -275,11 +328,7 @@ class AgentMint:
         tool_name = tool_data["tool"]
         tool_info, request_message = ToolController.available_tools[
             tool_name
-<<<<<<< HEAD
-        ].get_tool_fields_info()
-=======
         ].get_tool_info()
->>>>>>> feature/139845
 
         params = tool_data["params"]
         formatted_params = {}

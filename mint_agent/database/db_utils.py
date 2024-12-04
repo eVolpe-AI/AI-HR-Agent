@@ -2,7 +2,7 @@ import pickle
 from contextlib import AbstractContextManager
 from datetime import datetime, timedelta
 from types import TracebackType
-from typing import AsyncIterator, Optional, Sequence
+from typing import AsyncIterator, Optional, Sequence, Union
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import (
@@ -256,39 +256,37 @@ class MongoDBUsageTracker(MongoDBBase):
         except Exception as e:
             logger.error(f"Error while pushing token usage: {e}")
 
-    async def get_token_usage(self, hours: int) -> int:
+    async def get_token_usage(self, hours: int) -> Union[dict, None]:
         time_period = datetime.now() - timedelta(hours=hours)
 
         pipeline = [
             {"$match": {"timestamp": {"$gte": time_period}}},
             {
                 "$group": {
-                    "_id": None,
-                    "total_input_tokens": {"$sum": "$tokens.input_tokens"},
-                    "total_output_tokens": {"$sum": "$tokens.output_tokens"},
-                    "total_tokens": {"$sum": "$tokens.total_tokens"},
+                    "_id": {
+                        "provider": "$llm.provider",
+                        "model_name": "$llm.model_name",
+                    },
+                    "input_tokens": {"$sum": "$tokens.input_tokens"},
+                    "output_tokens": {"$sum": "$tokens.output_tokens"},
                 }
             },
         ]
 
-        try:
-            result = await self.collection.aggregate(pipeline).to_list(1)
+        result = await self.collection.aggregate(pipeline).to_list(length=None)
+        token_usage = {}
 
-            if result:
-                doc = result[0]
-                return {
-                    "total_input_tokens": doc.get("total_input_tokens", 0),
-                    "total_output_tokens": doc.get("total_output_tokens", 0),
-                    "total_tokens": doc.get("total_tokens", 0),
+        if result:
+            for doc in result:
+                provider = doc["_id"]["provider"]
+                model_name = doc["_id"]["model_name"]
+                token_usage[(provider, model_name)] = {
+                    "input_tokens": doc["input_tokens"],
+                    "output_tokens": doc["output_tokens"],
                 }
-            else:
-                return {
-                    "total_input_tokens": 0,
-                    "total_output_tokens": 0,
-                    "total_tokens": 0,
-                }
-        except Exception as e:
-            logger.error(f"Error while getting token usage: {e}")
+        else:
+            token_usage = None
+        return token_usage
 
 
 class AgentDatabase(MongoDBBase):
