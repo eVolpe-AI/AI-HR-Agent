@@ -315,7 +315,29 @@
             text-align: right;
             border-bottom-right-radius: 0;
         }
+        
+        .dots::after {
+            content: " ";
+            display: inline-block;
+            width: 1em;
+            text-align: left;
+            animation: typingDots 1.5s steps(3, end) infinite;
+        }
 
+        @keyframes typingDots {
+            0% {
+                content: "";
+            }
+            33% {
+                content: ".";
+            }
+            66% {
+                content: "..";
+            }
+            100% {
+                content: "...";
+            }
+        }
 
     </style>
 </head>
@@ -403,12 +425,13 @@
                 var chatMessages = document.getElementById('chatMessages');
                 var message = JSON.parse(event.data);
                 console.log(message);
+                
                 if (message.type === "llm_text") {
                     var formattedContent = message.content.replace(/\n/g, '<br>');
-
                     if (lastAIMessageElement) {
                         lastAIMessageElement.innerHTML += formattedContent;
                     } else {
+                        deleteThinkingMessage();
                         var messageElement = document.createElement('div');
                         messageElement.classList.add('chat-message', 'ai-message');
                         messageElement.innerHTML = message.content;
@@ -431,17 +454,18 @@
                     messageElement.textContent = message.content;
                     chatMessages.appendChild(messageElement);
                 } else if (message.type === "llm_start") {
-                        aiThinking = null;
+                    lastAIMessageElement = null; 
+                    lockInput();
                 } else if (message.type === "llm_end") {
-                        lastAIMessageElement = null;
+                    unlockInput();
                 } else if (message.type === "tool_start") {
-                        var messageElement = document.createElement('div');
-                        messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
-                        messageElement.textContent = "Tool use: " + message.tool_name;
-                        if (!message.tool_input.includes("{'config':")) {
-                            messageElement.textContent += ", input: " + message.tool_input;
-                        }
-                        chatMessages.appendChild(messageElement); 
+                    var messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
+                    messageElement.textContent = "Tool use: " + message.tool_name;
+                    if (!message.tool_input.includes("{'config':")) {
+                        messageElement.textContent += ", input: " + message.tool_input;
+                    }
+                    chatMessages.appendChild(messageElement); 
                 } else if (message.type === "link") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-message');
@@ -450,13 +474,6 @@
                     `;
                     chatMessages.appendChild(messageElement);
                 }
-                // } else {
-                //     var messageElement = document.createElement('div');
-                //     messageElement.classList.add('chat-message', 'user-message');
-                //     messageElement.textContent = event.data;
-                //     chatMessages.appendChild(messageElement);
-                // }
-
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             };
 
@@ -499,6 +516,48 @@
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+
+        function addThinkingMessage() {
+            var chatMessages = document.getElementById('chatMessages');
+            var messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message');
+            messageElement.classList.add('thinking-message');
+            
+            var textNode = document.createTextNode("AI is thinking");
+
+            var dotsSpan = document.createElement('span');
+            dotsSpan.classList.add('dots');
+
+            messageElement.appendChild(textNode);
+            messageElement.appendChild(dotsSpan);
+
+
+            chatMessages.appendChild(messageElement);
+        }
+
+        function deleteThinkingMessage() {
+            var chatMessages = document.getElementById('chatMessages');
+            var thinkingMessage = chatMessages.querySelector('.thinking-message');
+            if (thinkingMessage) {
+                chatMessages.removeChild(thinkingMessage);
+            }
+        }
+
+        function lockInput() {
+            const inputField = document.getElementById("userInput");
+            const sendButton = document.getElementById("submitButton");
+
+            inputField.disabled = true;
+            sendButton.disabled = true;
+        }
+
+        function unlockInput() {
+            const inputField = document.getElementById("userInput");
+            const sendButton = document.getElementById("submitButton");
+
+            inputField.disabled = false;
+            sendButton.disabled = false;
+        }
         
         function sendMessage(event) {
             var input = document.getElementById("userInput")
@@ -508,7 +567,9 @@
             }
             ws.send(JSON.stringify(message))
             addMessageToChat(input.value, 'user-message')
+            addThinkingMessage();
             input.value = ''
+            lockInput();
             event.preventDefault()
         }
         
