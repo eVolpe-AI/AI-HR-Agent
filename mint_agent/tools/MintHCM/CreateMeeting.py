@@ -28,7 +28,10 @@ class MintCreateMeetingInput(BaseModel):
                     "date_start": ToolFieldDescription("Start time", required=True),
                     "date_end": ToolFieldDescription("End time", required=True),
                     "assigned_user_id": ToolFieldDescription(
-                        "Assigned to", "link", module="Users", required=True
+                        "Assigned to",
+                        "link",
+                        module="Users",
+                        required=True,
                     ),
                 },
                 "dict",
@@ -39,7 +42,7 @@ class MintCreateMeetingInput(BaseModel):
         ...,
         description="""
     List of ids of attendees to the meeting. Example: ['1', 'f39a04c4-e537-4030-9d5a-6638bb2bb87d']
-    If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM.
+    If you have just first_name and a last_name or username use MintSearchTool to search for user id in MintHCM. 
     """,
         json_schema_extra={
             "field_description": ToolFieldDescription(
@@ -99,6 +102,8 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
         attributes["date_start"] = to_db_time(meeting_start_date, date_format)
         attributes["date_end"] = to_db_time(meeting_end_date, date_format)
 
+        current_user_id = config["configurable"]["mint_user_id"]
+
         try:
             module_name = "Meetings"
             suitecrm = self.get_connection(config)
@@ -106,6 +111,9 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
             for attendee in attendees:
                 if not suitecrm.verify_record_exists(attendee, "Users"):
                     return tool_response(f"User with id {attendee} does not exist")
+
+            if current_user_id not in attendees:
+                attendees.append(current_user_id)
 
             for candidate in candidates:
                 if not suitecrm.verify_record_exists(candidate, "Candidates"):

@@ -44,7 +44,7 @@ async def tool_controller(state):
         missing_values = check_required_fields(tool_name, tool_input)
         if missing_values:
             tool_call_message = state["messages"][-1].tool_calls[0]
-            validation_error = f"Missing value for: {', '.join(missing_values)}. Get the information from the person who sent you the request."
+            validation_error = f"Missing value{'s' if len(missing_values) > 1 else ''} for: {', '.join(missing_values)}."
             new_state["messages"] = ToolMessage(
                 tool_call_id=tool_call_message["id"],
                 content=validation_error,
