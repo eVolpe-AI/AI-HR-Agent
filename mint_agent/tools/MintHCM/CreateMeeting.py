@@ -85,9 +85,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
     ) -> Dict[str, Any]:
         meeting_start_date = attributes.get("date_start")
         meeting_end_date = attributes.get("date_end")
-
         date_format = "%Y-%m-%d %H:%M:%S"
-
         try:
             start_date = datetime.strptime(meeting_start_date, date_format)
             end_date = datetime.strptime(meeting_end_date, date_format)
@@ -96,17 +94,20 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
                 "date_start and date_end must be in format 'YYYY-MM-DD HH:MM:SS' e.g. '2022-01-01 12:00:00'"
             )
 
-        attributes["duration_hours"] = (end_date - start_date).seconds // 3600
-        attributes["duration_minutes"] = (end_date - start_date).seconds % 3600 // 60
-
-        attributes["date_start"] = to_db_time(meeting_start_date, date_format)
-        attributes["date_end"] = to_db_time(meeting_end_date, date_format)
-
-        current_user_id = config["configurable"]["mint_user_id"]
-
         try:
             module_name = "Meetings"
             suitecrm = self.get_connection(config)
+
+            current_user_id = config["configurable"]["mint_user_id"]
+            user_timezone = suitecrm.get_user_preferences(current_user_id)["timezone"]
+
+            attributes["duration_hours"] = (end_date - start_date).seconds // 3600
+            attributes["duration_minutes"] = (
+                (end_date - start_date).seconds % 3600 // 60
+            )
+
+            attributes["date_start"] = to_db_time(meeting_start_date, user_timezone)
+            attributes["date_end"] = to_db_time(meeting_end_date, user_timezone)
 
             for attendee in attendees:
                 if not suitecrm.verify_record_exists(attendee, "Users"):

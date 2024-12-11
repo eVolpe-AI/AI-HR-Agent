@@ -210,6 +210,19 @@ class SuiteCRM:
         module_response = self.request(f"{self.baseurl}{url}", "get")
         return list(module_response["data"]["attributes"].keys())
 
+    def get_user_preferences(self, user_id: str) -> dict:
+        """
+        Gets the preferences of a user.
+
+        :param user_id: (string) id of the user you want to get preferences for.
+
+        :return: (dictionary) The preferences of the user.
+        """
+        url = f"/user-preferences/{user_id}"
+        return self.request(f"{self.baseurl}{url}", "get")["data"]["attributes"][
+            "global"
+        ]
+
 
 class Module:
     def __init__(self, suitecrm, module_name):
