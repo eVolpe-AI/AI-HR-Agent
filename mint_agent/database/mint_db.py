@@ -5,14 +5,14 @@ import pytz
 from dotenv import load_dotenv
 
 
-def to_db_time(timestamp, format="%Y-%m-%d %H:%M:%S"):
+def to_db_time(timestamp, user_timezone: str, format="%Y-%m-%d %H:%M:%S"):
     load_dotenv()
     try:
-        user_timezone = pytz.timezone(os.getenv("USER_TIMEZONE"))
         db_timezone = pytz.timezone("UTC")
+        user_timezone = pytz.timezone(user_timezone)
 
-        if not user_timezone or not db_timezone:
-            raise ValueError("USER_TIMEZONE and DB_TIMEZONE must be set in .env file")
+        if not db_timezone:
+            raise ValueError("DB_TIMEZONE must be set in .env file")
 
         if isinstance(timestamp, str):
             timestamp = datetime.strptime(timestamp, format)
