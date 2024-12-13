@@ -73,9 +73,8 @@ class OpenAIController(BaseController):
                 raise AgentError(f"{e}")
 
     async def get_output(self, messages: list) -> AIMessage:
-        test_mes = []
         try:
-            return await self.client.ainvoke(test_mes)
+            return await self.client.ainvoke(messages)
         except openai.APIStatusError as e:
             self.handle_api_error(e)
         except Exception as e:

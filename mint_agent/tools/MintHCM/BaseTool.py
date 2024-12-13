@@ -197,9 +197,7 @@ class MintBaseTool(BaseAgentTool, ToolUtils):
                 client_id=client_id, client_secret=client_secret, url=self.api_url
             )
         except Exception as e:
-            raise AgentError(
-                f"Error occurred while trying to get connect to MintHCM API: {e}"
-            )
+            raise AgentError(f"MintHCM API: {e}")
 
 
 def tool_response(
