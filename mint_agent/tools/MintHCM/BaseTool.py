@@ -7,6 +7,7 @@ from loguru import logger
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
 from mint_agent.tools.MintHCM.SuiteAPI import SuiteCRM
+from mint_agent.utils.errors import AgentError
 
 load_dotenv()
 
@@ -196,7 +197,9 @@ class MintBaseTool(BaseAgentTool, ToolUtils):
                 client_id=client_id, client_secret=client_secret, url=self.api_url
             )
         except Exception as e:
-            raise e
+            raise AgentError(
+                f"Error occurred while trying to get connect to MintHCM API: {e}"
+            )
 
 
 def tool_response(

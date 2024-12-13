@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from langchain_core.runnables.config import RunnableConfig
-from langchain_core.tools import BaseTool
+from langchain_core.tools import BaseTool, ToolException
 
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool, tool_response
 
@@ -47,4 +47,4 @@ class MintGetModuleNamesTool(BaseTool, MintBaseTool):
 
             return tool_response(modules)
         except Exception as e:
-            return f"Error occured while trying to get list of modules: {e}"
+            raise ToolException(f"Error: {e}")
