@@ -13,6 +13,8 @@ from oauthlib.oauth2 import (
 from oauthlib.oauth2.rfc6749.errors import CustomOAuth2Error
 from requests_oauthlib import OAuth2Session
 
+from mint_agent.utils.errors import AgentError
+
 
 class SuiteCRM:
     def __init__(
@@ -67,9 +69,9 @@ class SuiteCRM:
                 client_secret=self._client_secret,
             )
         except InvalidClientError:
-            exit("401 (Unauthorized) - client id/secret")
+            raise AgentError("Invalid client id/secret")
         except CustomOAuth2Error:
-            exit("401 (Unauthorized) - client id")
+            raise AgentError("Error while getting access to API")
         # Update configuration file with new token'
         with open("AccessToken.txt", "w+") as file:
             file.write(str(self.OAuth2Session.token))
@@ -152,7 +154,7 @@ class SuiteCRM:
                 data = the_method(url, data=data)
             attempts += 1
         if data.status_code == 401:
-            exit(
+            raise AgentError(
                 "401 (Unauthorized) client id/secret has been revoked, new token was attempted and failed."
             )
 

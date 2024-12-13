@@ -1,9 +1,12 @@
 from typing import Optional
 
+import openai
 from dotenv import load_dotenv
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 from mint_agent.llm.BaseController import BaseController
+from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
 
 load_dotenv()
 
@@ -51,11 +54,39 @@ class OpenAIController(BaseController):
         if tools:
             self.client = self.client.bind_tools(tools)
 
-    async def get_output(self, messages):
-        return await self.client.ainvoke(messages)
+    @staticmethod
+    def handle_api_error(e: openai.APIStatusError):
+        match e.status_code:
+            case 400:
+                raise AgentError("OpenAI API bad request")
+            case 401:
+                raise AgentError("OpenAI API authentication error")
+            case 429:
+                raise AgentError("OpenAI API rate limit exceeded")
+            case 500:
+                raise AgentError("OpenAI API internal server error")
+            case 503:
+                raise LLMServiceUnavailableError(
+                    "OpenAI API service is temporarily unavailable"
+                )
+            case _:
+                raise AgentError(f"{e}")
+
+    async def get_output(self, messages: list) -> AIMessage:
+        try:
+            return await self.client.ainvoke(messages)
+        except openai.APIStatusError as e:
+            self.handle_api_error(e)
+        except Exception as e:
+            raise AgentError(f"Failed to call OpenAI LLM model: {e}")
 
     def get_summary(self, messages):
         config = {
             "tags": ["silent"],
         }
-        return self.client.invoke(messages, config)
+        try:
+            return self.client.invoke(messages, config)
+        except openai.APIStatusError as e:
+            self.handle_api_error(e)
+        except Exception as e:
+            raise AgentError(f"Failed to call OpenAI LLM model: {e}")

@@ -449,6 +449,7 @@
                     document.getElementById("confirm").disabled = false;
                     document.getElementById("decline").disabled = false;
                 } else if (message.type === "error") {
+                    deleteThinkingMessage()
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'error');
                     messageElement.textContent = message.content;
