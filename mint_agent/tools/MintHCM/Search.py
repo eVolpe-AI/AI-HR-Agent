@@ -73,8 +73,6 @@ class MintSearchTool(BaseTool, MintBaseTool):
                 "response"
             ]["fields"]
 
-            print(module_fields)
-
             fields_array = fields.replace(" ", "").split(",")
             available_fields = module_fields.keys()
 
