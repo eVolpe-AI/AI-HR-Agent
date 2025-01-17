@@ -129,7 +129,7 @@ class MintCreateMeetingTool(BaseTool, MintBaseTool):
 
             def add_relationships(relationship_type, ids):
                 for record_id in ids:
-                    relationship_url = f'{self.api_url}/module/{module_name}/{response["data"]["id"]}/relationships/{relationship_type}'
+                    relationship_url = f"{self.api_url}/module/{module_name}/{response['data']['id']}/relationships/{relationship_type}"
                     relationship_data = {
                         "type": relationship_type.capitalize(),
                         "id": record_id,

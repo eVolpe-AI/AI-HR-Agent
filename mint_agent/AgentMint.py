@@ -21,7 +21,7 @@ from mint_agent.agent_state.state import (
     HistoryManagementType,
 )
 from mint_agent.database.db_utils import MongoDBUsageTracker
-from mint_agent.llm.ChatFactory import ChatFactory, ProviderConfig
+from mint_agent.llm.ChatFactory import ChatFactory
 from mint_agent.tools.MintHCM.BaseTool import MintBaseTool
 from mint_agent.tools.ToolController import ToolController
 from mint_agent.utils.AgentLogger import AgentLogger
@@ -140,7 +140,7 @@ class AgentMint:
                         / Decimal(TOKENS_PER_PRICE)
                         * Decimal(model_pricing[category])
                     )
-                    for category in ("input_tokens", "output_tokens")
+                    for category in ("input_tokens", "output_tokens", "cache_reads")
                 )
             return user_spending < Decimal(usage_limit["cost"])
 
@@ -254,7 +254,7 @@ class AgentMint:
                 )
                 self.state["messages"].append(
                     HumanMessage(
-                        content=f"I rejected the use of the tool {tool_call_message["name"]} {f"because: {message.content}." if message.content else "and i don't want to provide a reason."}"
+                        content=f"I rejected the use of the tool {tool_call_message['name']} {f'because: {message.content}.' if message.content else "and i don't want to provide a reason."}"
                     )
                 )
 
@@ -292,26 +292,24 @@ class AgentMint:
                 output = AgentMessage(type=AgentMessageType.LLM_START)
             case "on_chat_model_end":
                 output = AgentMessage(type=AgentMessageType.LLM_END)
-                returns_usage_data = ProviderConfig.get_param(
-                    self.state["provider"], "returns_usage_data"
-                )
+
                 self.state["messages"].append(event["data"]["output"])
 
-                if returns_usage_data:
-                    usage_data = {
-                        "tokens": event["data"]["output"].usage_metadata,
-                        "llm": {
-                            "provider": self.state["provider"],
-                            "model_name": self.state["model_name"],
-                        },
-                        "timestamp": datetime.now(),
-                    }
-                    usage_data["tokens"].pop("input_token_details")
-                    await self.usage_tracker.push_token_usage(usage_data)
-                    self.state["history_token_count"] = event["data"][
-                        "output"
-                    ].usage_metadata["input_tokens"]
-                    self.agent_logger.set_usage_data(usage_data)
+                usage_data = {
+                    "tokens": event["data"]["output"].usage_metadata,
+                    "llm": {
+                        "provider": self.state["provider"],
+                        "model_name": self.state["model_name"],
+                    },
+                    "timestamp": datetime.now(),
+                }
+
+                await self.usage_tracker.push_token_usage(usage_data)
+                self.state["history_token_count"] = event["data"][
+                    "output"
+                ].usage_metadata["input_tokens"]
+                self.agent_logger.set_usage_data(usage_data)
+
             case "on_tool_start":
                 if self.is_advanced:
                     output = AgentMessage(

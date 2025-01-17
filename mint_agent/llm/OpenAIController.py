@@ -1,6 +1,7 @@
 from typing import Optional
 
 from dotenv import load_dotenv
+from langchain_community.callbacks import get_openai_callback
 from langchain_openai import ChatOpenAI
 
 from mint_agent.llm.BaseController import BaseController
@@ -46,6 +47,7 @@ class OpenAIController(BaseController):
             api_key=api_key,
             max_tokens=max_tokens,
             streaming=streaming,
+            stream_usage=True,
         )
 
         if tools:
