@@ -60,6 +60,9 @@ class ToolController:
     }
 
     default_tools = [
+        # "MintCreateRelTool",
+        # "MintDeleteRelTool",
+        # "MintGetRelTool",
         "MintGetModuleNamesTool",
         "MintGetModuleFieldsTool",
         "MintUpdateFieldsTool",
@@ -67,6 +70,7 @@ class ToolController:
         "MintCreateRecordTool",
         "MintCreateMeetingTool",
         "MintGetUsersTool",
+        "MintUpdateFieldsTool",
         "MintDeleteRecordTool",
         "CalendarTool",
         "AvailabilityTool",
@@ -75,7 +79,7 @@ class ToolController:
     safe_tools = [
         "CalendarTool",
         "AvailabilityTool",
-        "MintGetRelTool",
+        # "MintGetRelTool",
         "MintGetUsersTool",
         "MintGetModuleNamesTool",
         "MintGetModuleFieldsTool",
