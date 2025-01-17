@@ -19,6 +19,11 @@ class BaseController(ABC):
         """
         raise NotImplementedError
 
+    @staticmethod
+    @abstractmethod
+    def handle_api_error(error):
+        raise NotImplementedError
+
     # TODO async version causes asyncio error
     @abstractmethod
     def get_summary(self, messages) -> AIMessage:

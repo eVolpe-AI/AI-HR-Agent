@@ -189,9 +189,9 @@ async def websocket_endpoint(
         await manager.send_message(message, websocket)
         await manager.disconnect(websocket)
         raise
-    except Exception:
+    except Exception as e:
         message = AgentMessage(
-            type=AgentMessageType.ERROR, content="Internal error occurred"
+            type=AgentMessageType.ERROR, content=f"Error: {e}"
         ).to_json()
         await manager.send_message(message, websocket)
         await manager.disconnect(websocket)

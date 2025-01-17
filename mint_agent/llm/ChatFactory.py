@@ -18,12 +18,15 @@ class ChatFactory:
                     "output_tokens": 1.25,
                     "cache_reads": 0,
                 },
+                "model_rank": 1,
             },
             "claude-3-5-haiku-20241022": {
                 "pricing": {"input_tokens": 1, "output_tokens": 5, "cache_reads": 0},
+                "model_rank": 2,
             },
             "claude-3-5-sonnet-20241022": {
                 "pricing": {"input_tokens": 3, "output_tokens": 15, "cache_reads": 0},
+                "model_rank": 3,
             },
         },
         "OPENAI": {
@@ -33,6 +36,7 @@ class ChatFactory:
                     "output_tokens": 0.6,
                     "cache_reads": 0.075,
                 },
+                "model_rank": 1,
             }
         },
     }

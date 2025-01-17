@@ -1,9 +1,11 @@
 from typing import Optional
 
+import anthropic
 from langchain_anthropic.chat_models import ChatAnthropic
 from langchain_core.messages import AIMessage
 
 from mint_agent.llm.BaseController import BaseController
+from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
 
 DEFAULT_MODEL = "claude-3-haiku-20240307"
 DEFAULT_MAX_TOKENS = 1000
@@ -41,11 +43,41 @@ class AnthropicController(BaseController):
             streaming=streaming,
         ).bind_tools(tools)
 
+    @staticmethod
+    def handle_api_error(e: anthropic.APIStatusError):
+        match e.status_code:
+            case 400:
+                raise AgentError("Anthropic API bad request")
+            case 401:
+                raise AgentError("Anthropic API authentication error")
+            case 403:
+                raise AgentError("Anthropic API permission denied")
+            case 413:
+                raise AgentError("Anthropic API request exceeds the maximum size limit")
+            case 500:
+                raise AgentError("Anthropic API internal server error")
+            case 529:
+                raise LLMServiceUnavailableError(
+                    "Anthropic API is temporarily unavailable."
+                )
+            case _:
+                raise AgentError(f"{e}")
+
     async def get_output(self, messages: list) -> AIMessage:
-        return await self.client.ainvoke(messages)
+        try:
+            return await self.client.ainvoke(messages)
+        except anthropic.APIStatusError as e:
+            self.handle_api_error(e)
+        except Exception as e:
+            raise AgentError(f"Failed to call Anthropic LLM model: {e}")
 
     def get_summary(self, messages: list) -> AIMessage:
         config = {
             "tags": ["silent"],
         }
-        return self.client.invoke(messages, config)
+        try:
+            return self.client.invoke(messages, config)
+        except anthropic.APIStatusError as e:
+            self.handle_api_status_error(e)
+        except Exception as e:
+            raise AgentError(f"Failed to call Anthropic LLM model: {e}")

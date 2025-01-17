@@ -28,6 +28,6 @@ async def llm_call(state):
         if not state["is_advanced"]:
             await adispatch_custom_event("llm_response", {"response": response})
     except Exception as e:
-        raise AgentError("Failed to call LLM model") from e
+        raise e
 
     return {"messages": response}

@@ -70,7 +70,6 @@ class ToolController:
         "MintCreateRecordTool",
         "MintCreateMeetingTool",
         "MintGetUsersTool",
-        "MintUpdateFieldsTool",
         "MintDeleteRecordTool",
         "CalendarTool",
         "AvailabilityTool",
