@@ -1,9 +1,11 @@
+import os
 from typing import Optional
 
 import openai
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
+from langfuse.callback import CallbackHandler
 
 from mint_agent.llm.BaseController import BaseController
 from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
@@ -52,6 +54,16 @@ class OpenAIController(BaseController):
             stream_usage=True,
         )
 
+        enable_langfuse = os.getenv("LANGFUSE_TRACING", "false").lower() == "true"
+        if enable_langfuse:
+            self.callback_handler = CallbackHandler(
+                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                host=os.getenv("LANGFUSE_HOST"),
+            )
+        else:
+            self.callback_handler = None
+
         if tools:
             self.client = self.client.bind_tools(tools)
 
@@ -75,6 +87,10 @@ class OpenAIController(BaseController):
 
     async def get_output(self, messages: list) -> AIMessage:
         try:
+            if self.callback_handler:
+                return await self.client.ainvoke(
+                    messages, config={"callbacks": [self.callback_handler]}
+                )
             return await self.client.ainvoke(messages)
         except openai.APIStatusError as e:
             self.handle_api_error(e)
@@ -83,6 +99,7 @@ class OpenAIController(BaseController):
 
     def get_summary(self, messages):
         config = {
+            "callbacks": [self.callback_handler] if self.callback_handler else [],
             "tags": ["silent"],
         }
         try:

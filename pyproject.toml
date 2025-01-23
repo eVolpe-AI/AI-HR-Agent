@@ -132,6 +132,7 @@ win32-setctime = {version = "1.1.0", markers = "platform_system == \"Windows\""}
 yarg = "0.1.9"
 yarl = "1.9.4"
 pytz = "^2024.2"
+langfuse = "^2.57.12"
 
 
 [build-system]

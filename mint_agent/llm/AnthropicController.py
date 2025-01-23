@@ -1,18 +1,23 @@
+import os
 from typing import Optional
 
 import anthropic
+from dotenv import load_dotenv
 from langchain_anthropic.chat_models import ChatAnthropic
 from langchain_core.messages import AIMessage
+from langfuse.callback import CallbackHandler
 
 from mint_agent.llm.BaseController import BaseController
 from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
 
-DEFAULT_MODEL = "claude-3-haiku-20240307"
-DEFAULT_MAX_TOKENS = 1000
+load_dotenv()
 
 
 class AnthropicController(BaseController):
     """Class to control conversation with Anthropic's Claude model"""
+
+    DEFAULT_MODEL = "claude-3-haiku-20240307"
+    DEFAULT_MAX_TOKENS = 1000
 
     def __init__(
         self,
@@ -35,6 +40,16 @@ class AnthropicController(BaseController):
         """
 
         tools = tools or []
+
+        enable_langfuse = os.getenv("LANGFUSE_TRACING", "false").lower() == "true"
+        if enable_langfuse:
+            self.callback_handler = CallbackHandler(
+                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                host=os.getenv("LANGFUSE_HOST"),
+            )
+        else:
+            self.callback_handler = None
 
         self.client = ChatAnthropic(
             model=model_name,
@@ -65,6 +80,10 @@ class AnthropicController(BaseController):
 
     async def get_output(self, messages: list) -> AIMessage:
         try:
+            if self.callback_handler:
+                return await self.client.ainvoke(
+                    messages, config={"callbacks": [self.callback_handler]}
+                )
             return await self.client.ainvoke(messages)
         except anthropic.APIStatusError as e:
             self.handle_api_error(e)
@@ -74,6 +93,7 @@ class AnthropicController(BaseController):
     def get_summary(self, messages: list) -> AIMessage:
         config = {
             "tags": ["silent"],
+            "callbacks": [self.callback_handler] if self.callback_handler else [],
         }
         try:
             return self.client.invoke(messages, config)
