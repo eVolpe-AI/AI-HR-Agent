@@ -277,6 +277,7 @@ class AgentMint:
         match event_kind:
             case "on_chat_model_stream":
                 if "silent" not in event["tags"] and self.is_advanced:
+                    print(f"On stream event data: \n {event}\n")
                     content = event["data"]["chunk"].content
                     if content:
                         if isinstance(content, str):
@@ -312,6 +313,9 @@ class AgentMint:
 
             case "on_tool_start":
                 if self.is_advanced:
+                    print(
+                        f"Tool start event data: \n {event['name']}, {event['data']['input']}\n"
+                    )
                     output = AgentMessage(
                         type=AgentMessageType.TOOL_START,
                         tool_name=event["name"],

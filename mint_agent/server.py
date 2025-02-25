@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 
 import uvicorn
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.websockets import WebSocketState
 from loguru import logger
@@ -11,6 +12,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
 from mint_agent.agent_api.messages import AgentMessage, AgentMessageType, UserMessage
+from mint_agent.agent_api.user_feedback import Feedback, send_feedback_to_langfuse
 from mint_agent.AgentMint import AgentMint
 from mint_agent.database.db_utils import AgentDatabase
 from mint_agent.utils.AgentLogger import configure_logging
@@ -21,6 +23,13 @@ configure_logging()
 http_chat = FastAPI()
 api = FastAPI()
 credential_manager = CredentialManager()
+
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def call_agent(
@@ -114,6 +123,14 @@ async def get():
     return FileResponse("mint_agent/utils/chat.html")
 
 
+@api.post("/feedback")
+async def feedback(feedback: Feedback):
+    try:
+        send_feedback_to_langfuse(feedback)
+    except Exception as e:
+        print(f"Error: {e}")
+
+
 @api.websocket("/{user_id}/{chat_id}/{token}")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -161,7 +178,7 @@ async def websocket_endpoint(
         )
         while True:
             incoming_message = await websocket.receive_json()
-            user_input = UserMessage(incoming_message)
+            user_input = UserMessage(**incoming_message)
             message_type = user_input.to_json()["type"]
             match message_type:
                 case "input":

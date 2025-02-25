@@ -338,7 +338,70 @@
                 content: "...";
             }
         }
+        
+        .feedback-section {
+            padding: 10px;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid black;
+            gap: 10px;
+        }
 
+        .feedback-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .feedback-button {
+            padding: 5px 15px;
+            font-size: 1em;
+            background-color: #4caf50;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feedback-button:hover {
+            filter: brightness(85%);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        #thumbs-down {
+            background-color: #f44336;
+        }
+
+        .feedback-comment-box {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .feedback-comment-box textarea {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #0E1117;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            font-size: 1em;
+            resize: vertical;
+        }
+
+        .send-feedback-button {
+            padding: 10px 20px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .send-feedback-button:hover {
+            filter: brightness(85%);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -381,6 +444,9 @@
         </div>
 
         <div class="chat-messages" id="chatMessages">
+            <div class="chat-message ai-message" id="ddd">
+                Welcome to Mint Agent! How can I help you today?
+            </div>
         </div>
 
         <form class="chat-input" action="" onsubmit="sendMessage(event)">
@@ -400,7 +466,8 @@
     </div>
     <script>
         var ws;
-        var lastAIMessageElement = null;
+        // var lastAIMessageElement = null;
+        var lastAIMessageElement = document.getElementById('ddd');
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("confirm").disabled = true;
@@ -459,6 +526,7 @@
                     lockInput();
                 } else if (message.type === "llm_end") {
                     unlockInput();
+                    allowFeedback();
                 } else if (message.type === "tool_start") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
@@ -572,6 +640,7 @@
             input.value = ''
             lockInput();
             event.preventDefault()
+            forbidFeedback();
         }
         
         function closeWebSocket() {
@@ -629,6 +698,92 @@
             chatMessages.innerHTML = '';
         }
 
+        function feedback(event) {
+            let messageElem = event.target;
+
+            let existingFeedback = messageElem.querySelector('.feedback-section');
+            if (!existingFeedback) {
+                let feedbackSection = document.createElement('div');
+                feedbackSection.className = 'feedback-section';
+                feedbackSection.innerHTML = `
+                    <div class="feedback-buttons">
+                        <button id="thumbs-up" class="feedback-button">👍</button>
+                        <button id="thumbs-down" class="feedback-button">👎</button>
+                    </div>
+                    <div id="feedback-comment-box" class="feedback-comment-box" style="display: none;">
+                        <textarea id="feedback-comment" placeholder="Please provide your feedback..."></textarea>
+                        <button id="send-feedback" class="send-feedback-button">Send Feedback</button>
+                    </div>
+                `;
+
+                messageElem.appendChild(feedbackSection);
+
+                feedbackSection.querySelector("#thumbs-up").addEventListener("click", () => {
+                    sendFeedback("positive");
+                    forbidFeedback();
+                });
+
+                feedbackSection.querySelector("#thumbs-down").addEventListener("click", () => {
+                    document.getElementById("feedback-comment-box").style.display = "block";
+                });
+
+                feedbackSection.querySelector("#send-feedback").addEventListener("click", () => {
+                    let comment = document.getElementById("feedback-comment").value;
+                    sendFeedback("negative", comment);
+                    forbidFeedback();
+                });
+            }
+        }
+
+        function allowFeedback() {
+            if (lastAIMessageElement != null) {
+                lastAIMessageElement.addEventListener("mouseenter", feedback);
+                lastAIMessageElement.addEventListener("mouseleave", () => {
+                    let feedbackSection = lastAIMessageElement.querySelector(".feedback-section");
+                    if (feedbackSection) {
+                        feedbackSection.remove();
+                    }
+                });
+            }
+        }
+
+        function forbidFeedback() {
+            if (lastAIMessageElement !== null) {
+                let feedbackSection = lastAIMessageElement.querySelector(".feedback-section");
+                if (feedbackSection) {
+                    feedbackSection.remove();
+                }
+                lastAIMessageElement.removeEventListener("mouseenter", feedback);
+            }
+        }
+
+        async function sendFeedback(type, comment = '') {
+            const feedback = {
+                type: type,
+                comment: comment
+            };
+
+            try {
+                const response = await fetch('http://localhost:5288/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                        
+                    },
+                    body: JSON.stringify(feedback)
+                });
+            
+                if (!response.ok) {
+                    throw new Error('Failed to send feedback');
+                } else {
+                    console.log('Feedback sent successfully: ', feedback);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
         document.getElementById('connect').addEventListener('click', connectWebSocket);
         document.getElementById('close').addEventListener('click', closeWebSocket);
         document.getElementById('reconnect').addEventListener('click', reconnectWebSocket);
@@ -636,6 +791,8 @@
         document.getElementById("decline").addEventListener("click", sendDecline)
         document.getElementById("roll-id").addEventListener("click", generateRandomID)
         document.getElementById("clear-button").addEventListener("click", clearChat)
+
+        allowFeedback();
     </script>
 </body>
 </html>
