@@ -1,11 +1,9 @@
-import os
 from typing import Optional
 
 import openai
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
-from langfuse.callback import CallbackHandler
 
 from mint_agent.llm.BaseController import BaseController
 from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
@@ -54,16 +52,6 @@ class OpenAIController(BaseController):
             stream_usage=True,
         )
 
-        enable_langfuse = os.getenv("LANGFUSE_TRACING", "false").lower() == "true"
-        if enable_langfuse:
-            self.callback_handler = CallbackHandler(
-                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-                public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-                host=os.getenv("LANGFUSE_HOST"),
-            )
-        else:
-            self.callback_handler = None
-
         if tools:
             self.client = self.client.bind_tools(tools)
 
@@ -85,21 +73,27 @@ class OpenAIController(BaseController):
             case _:
                 raise AgentError(f"{e}")
 
-    async def get_output(self, messages: list) -> AIMessage:
+    async def get_output(
+        self, messages: list, chat_id: Optional[str], user: Optional[str]
+    ) -> AIMessage:
+        callback_handler = self.get_callback_handler(chat_id, user)
         try:
-            if self.callback_handler:
-                return await self.client.ainvoke(
-                    messages, config={"callbacks": [self.callback_handler]}
-                )
-            return await self.client.ainvoke(messages)
+            return await self.client.ainvoke(
+                messages,
+                config={
+                    "callbacks": [callback_handler],
+                },
+            )
         except openai.APIStatusError as e:
             self.handle_api_error(e)
         except Exception as e:
             raise AgentError(f"Failed to call OpenAI LLM model: {e}")
 
-    def get_summary(self, messages):
+    def get_summary(
+        self, messages, chat_id: Optional[str], user: Optional[str]
+    ) -> AIMessage:
         config = {
-            "callbacks": [self.callback_handler] if self.callback_handler else [],
+            "callbacks": [self.get_callback_handler(chat_id, user)],
             "tags": ["silent"],
         }
         try:

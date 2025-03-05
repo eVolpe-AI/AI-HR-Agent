@@ -325,3 +325,22 @@ class AgentDatabase(MongoDBBase):
             return await self.collection.find_one({}, projection=projection)
         except Exception as e:
             logger.error(f"Error while getting data from database: {e}")
+
+    def save_user_feedback(self, feedback) -> None:
+        feedback_collection = self.client[self.db_name][f"{feedback.user}_feedback"]
+        feedback_data = {
+            "timestamp": datetime.now(),
+            "run_id": feedback.run_id,
+            "type": feedback.type,
+            "comment": feedback.comment,
+        }
+
+        try:
+            feedback_collection.update_one(
+                {"run_id": feedback.run_id},
+                {"$set": feedback_data},
+                upsert=True,
+            )
+            print(f"Feedback saved/updated in database: {feedback}")
+        except Exception as e:
+            print(f"Error while saving user feedback: {e}")

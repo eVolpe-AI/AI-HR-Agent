@@ -62,6 +62,7 @@ class AgentMessage(BaseModel):
     content: Optional[str] = Field(None, description="The content of the message.")
     tool_name: Optional[str] = Field(None, description="The name of the tool.")
     tool_input: Optional[dict] = Field(None, description="The input to the tool.")
+    run_id: Optional[str] = Field(None, description="The langchain run ID")
 
     class Config:
         use_enum_values = True

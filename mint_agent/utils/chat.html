@@ -444,9 +444,6 @@
         </div>
 
         <div class="chat-messages" id="chatMessages">
-            <div class="chat-message ai-message" id="ddd">
-                Welcome to Mint Agent! How can I help you today?
-            </div>
         </div>
 
         <form class="chat-input" action="" onsubmit="sendMessage(event)">
@@ -466,8 +463,8 @@
     </div>
     <script>
         var ws;
-        // var lastAIMessageElement = null;
-        var lastAIMessageElement = document.getElementById('ddd');
+        var lastAIMessageElement = null;
+        var lastMessageId = null;
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("confirm").disabled = true;
@@ -525,6 +522,8 @@
                     lastAIMessageElement = null; 
                     lockInput();
                 } else if (message.type === "llm_end") {
+                    lastMessageId = message.run_id;
+                    console.log("Last message ID: ", lastMessageId);
                     unlockInput();
                     allowFeedback();
                 } else if (message.type === "tool_start") {
@@ -719,7 +718,7 @@
                 messageElem.appendChild(feedbackSection);
 
                 feedbackSection.querySelector("#thumbs-up").addEventListener("click", () => {
-                    sendFeedback("positive");
+                    sendFeedback(document.querySelector("#username").value, lastMessageId, "positive");
                     forbidFeedback();
                 });
 
@@ -729,7 +728,7 @@
 
                 feedbackSection.querySelector("#send-feedback").addEventListener("click", () => {
                     let comment = document.getElementById("feedback-comment").value;
-                    sendFeedback("negative", comment);
+                    sendFeedback(document.querySelector("#username").value,lastMessageId, "negative", comment);
                     forbidFeedback();
                 });
             }
@@ -757,8 +756,10 @@
             }
         }
 
-        async function sendFeedback(type, comment = '') {
+        async function sendFeedback(user, run_id, type, comment = '') {
             const feedback = {
+                user: user,
+                run_id: run_id,
                 type: type,
                 comment: comment
             };

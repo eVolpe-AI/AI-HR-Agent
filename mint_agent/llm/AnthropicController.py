@@ -1,11 +1,9 @@
-import os
 from typing import Optional
 
 import anthropic
 from dotenv import load_dotenv
 from langchain_anthropic.chat_models import ChatAnthropic
 from langchain_core.messages import AIMessage
-from langfuse.callback import CallbackHandler
 
 from mint_agent.llm.BaseController import BaseController
 from mint_agent.utils.errors import AgentError, LLMServiceUnavailableError
@@ -41,16 +39,6 @@ class AnthropicController(BaseController):
 
         tools = tools or []
 
-        enable_langfuse = os.getenv("LANGFUSE_TRACING", "false").lower() == "true"
-        if enable_langfuse:
-            self.callback_handler = CallbackHandler(
-                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-                public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-                host=os.getenv("LANGFUSE_HOST"),
-            )
-        else:
-            self.callback_handler = None
-
         self.client = ChatAnthropic(
             model=model_name,
             temperature=temperature,
@@ -78,22 +66,27 @@ class AnthropicController(BaseController):
             case _:
                 raise AgentError(f"{e}")
 
-    async def get_output(self, messages: list) -> AIMessage:
+    async def get_output(
+        self, messages: list, chat_id: Optional[str], user: Optional[str]
+    ) -> AIMessage:
         try:
-            if self.callback_handler:
-                return await self.client.ainvoke(
-                    messages, config={"callbacks": [self.callback_handler]}
-                )
-            return await self.client.ainvoke(messages)
+            return await self.client.ainvoke(
+                messages,
+                config={
+                    "callbacks": [self.get_callback_handler(chat_id, user)],
+                },
+            )
         except anthropic.APIStatusError as e:
             self.handle_api_error(e)
         except Exception as e:
             raise AgentError(f"Failed to call Anthropic LLM model: {e}")
 
-    def get_summary(self, messages: list) -> AIMessage:
+    def get_summary(
+        self, messages: list, chat_id: Optional[str], user: Optional[str]
+    ) -> AIMessage:
         config = {
             "tags": ["silent"],
-            "callbacks": [self.callback_handler] if self.callback_handler else [],
+            "callbacks": [self.get_callback_handler(chat_id, user)],
         }
         try:
             return self.client.invoke(messages, config)

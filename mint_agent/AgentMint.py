@@ -62,8 +62,10 @@ class AgentMint:
         )
 
         self.history_config = HistoryManagement(
-            management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
-            number_of_messages=10,
+            # TODO: ZMIEN TO
+            # management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
+            management_type=HistoryManagementType.SUMMARIZE_N_MESSAGES.value,
+            number_of_messages=2,
             number_of_tokens=430,
         )
 
@@ -277,7 +279,6 @@ class AgentMint:
         match event_kind:
             case "on_chat_model_stream":
                 if "silent" not in event["tags"] and self.is_advanced:
-                    print(f"On stream event data: \n {event}\n")
                     content = event["data"]["chunk"].content
                     if content:
                         if isinstance(content, str):
@@ -292,7 +293,9 @@ class AgentMint:
             case "on_chat_model_start":
                 output = AgentMessage(type=AgentMessageType.LLM_START)
             case "on_chat_model_end":
-                output = AgentMessage(type=AgentMessageType.LLM_END)
+                run_id = event["data"]["output"].id.split("run-")[1]
+
+                output = AgentMessage(type=AgentMessageType.LLM_END, run_id=run_id)
 
                 self.state["messages"].append(event["data"]["output"])
 
@@ -342,11 +345,10 @@ class AgentMint:
                         )
                     case "llm_response":
                         response = event["data"].get("response")
-
                         if not response.tool_calls and "silent" not in event["tags"]:
                             output = AgentMessage(
                                 type=AgentMessageType.LLM_TEXT,
-                                content=response.content[0]["text"],
+                                content=response.content,
                             )
                     case _:
                         logger.warning(f"Unknown custom event: {event['name']}")

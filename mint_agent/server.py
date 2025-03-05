@@ -12,7 +12,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from mint_agent.agent_api.CredentialManager import CredentialManager
 from mint_agent.agent_api.messages import AgentMessage, AgentMessageType, UserMessage
-from mint_agent.agent_api.user_feedback import Feedback, send_feedback_to_langfuse
+from mint_agent.agent_api.user_feedback import Feedback, save_feedback
 from mint_agent.AgentMint import AgentMint
 from mint_agent.database.db_utils import AgentDatabase
 from mint_agent.utils.AgentLogger import configure_logging
@@ -125,8 +125,9 @@ async def get():
 
 @api.post("/feedback")
 async def feedback(feedback: Feedback):
+    print(f"Feedback recieved: {feedback}")
     try:
-        send_feedback_to_langfuse(feedback)
+        save_feedback(feedback)
     except Exception as e:
         print(f"Error: {e}")
 

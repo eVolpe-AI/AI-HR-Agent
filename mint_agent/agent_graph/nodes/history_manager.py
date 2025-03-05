@@ -2,6 +2,7 @@ import asyncio
 from typing import Any
 
 from langchain_core.messages import HumanMessage, RemoveMessage
+from langchain_core.runnables.config import RunnableConfig
 from loguru import logger
 
 from mint_agent.agent_state.state import GraphState, HistoryManagementType
@@ -10,7 +11,9 @@ from mint_agent.prompts.PromptController import PromptController
 from mint_agent.utils.errors import AgentError
 
 
-async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
+async def prepare_summary(
+    messages: list[Any], state: dict[str, Any], chat_id: str, user_id: str
+) -> str:
     model = state["model_name"]
     provider = state["provider"]
     prev_summary = state["conversation_summary"]
@@ -22,7 +25,7 @@ async def prepare_summary(messages: list[Any], state: dict[str, Any]) -> str:
     ]
     try:
         llm_model = ChatFactory.get_model_controller(provider, model)
-        summary = llm_model.get_summary(messages_to_summarize)
+        summary = llm_model.get_summary(messages_to_summarize, chat_id, user_id)
     except Exception as e:
         raise AgentError("Failed to call LLM to summarize conversation") from e
 
@@ -44,12 +47,17 @@ def clear_message_history(messages: list[Any]) -> tuple[list[Any], list[Any]]:
     return messages_to_delete, messages_to_summarize
 
 
-def history_manager(state: GraphState) -> GraphState:
+def history_manager(state: GraphState, config: RunnableConfig) -> GraphState:
     messages = state["messages"]
     history_config = state["history_config"]
 
     new_messages = []
     messages_to_summarize = []
+
+    chat_metadata = config.get("metadata")
+
+    chat_id = chat_metadata.get("chat_id")
+    user_id = chat_metadata.get("user_id")
 
     match history_config["management_type"]:
         case HistoryManagementType.KEEP_N_MESSAGES.value:
@@ -89,7 +97,11 @@ def history_manager(state: GraphState) -> GraphState:
             raise ValueError(f"Invalid history type {history_config['type']}")
 
     if messages_to_summarize:
-        summary = asyncio.run(prepare_summary(messages_to_summarize, state))
+        summary = asyncio.run(
+            prepare_summary(
+                messages_to_summarize, state, chat_id=chat_id, user_id=user_id
+            )
+        )
         return {
             "messages": new_messages,
             "conversation_summary": summary,

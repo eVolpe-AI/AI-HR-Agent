@@ -1,10 +1,30 @@
+import os
 from abc import ABC, abstractmethod
 
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage
+from langfuse.callback import CallbackHandler
+from loguru import logger
+
+load_dotenv()
 
 
 class BaseController(ABC):
     """Abstract base class for controlling conversation models"""
+
+    def get_callback_handler(self, chat_id, user_id):
+        try:
+            return CallbackHandler(
+                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                host=os.getenv("LANGFUSE_HOST"),
+                session_id=chat_id,
+                user_id=user_id,
+                enabled=os.getenv("LANGFUSE_TRACING", "false").lower() == "true",
+            )
+        except Exception as e:
+            logger.error(f"Failed to get langfuse callback handler: {e}")
+            return None
 
     @abstractmethod
     async def get_output(self, messages) -> AIMessage:
