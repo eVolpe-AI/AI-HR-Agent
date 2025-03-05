@@ -341,6 +341,5 @@ class AgentDatabase(MongoDBBase):
                 {"$set": feedback_data},
                 upsert=True,
             )
-            print(f"Feedback saved/updated in database: {feedback}")
         except Exception as e:
-            print(f"Error while saving user feedback: {e}")
+            logger.error(f"Error while saving user feedback: {e}")

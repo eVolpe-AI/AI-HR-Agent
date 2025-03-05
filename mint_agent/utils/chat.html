@@ -503,6 +503,7 @@
                         lastAIMessageElement = messageElement;
                     }
                 } else if (message.type === "accept_request") {
+                    deleteThinkingMessage();
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-tool');
                     messageElement.innerHTML = message.tool_input;
@@ -523,15 +524,19 @@
                     lockInput();
                 } else if (message.type === "llm_end") {
                     lastMessageId = message.run_id;
-                    console.log("Last message ID: ", lastMessageId);
+                    deleteThinkingMessage();
+                } else if (message.type === "agent_start") {
+                    lockInput();
+                } else if (message.type === "agent_end") {
                     unlockInput();
                     allowFeedback();
                 } else if (message.type === "tool_start") {
                     var messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message', 'ai-tool', 'tool-start');
                     messageElement.textContent = "Tool use: " + message.tool_name;
-                    if (!message.tool_input.includes("{'config':")) {
-                        messageElement.textContent += ", input: " + message.tool_input;
+                    tool_input = JSON.stringify(message.tool_input)
+                    if (!tool_input.includes("{'config':")) {
+                        messageElement.textContent += ", input: " + tool_input;
                     }
                     chatMessages.appendChild(messageElement); 
                 } else if (message.type === "link") {

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -61,7 +61,9 @@ class AgentMessage(BaseModel):
     type: AgentMessageType
     content: Optional[str] = Field(None, description="The content of the message.")
     tool_name: Optional[str] = Field(None, description="The name of the tool.")
-    tool_input: Optional[dict] = Field(None, description="The input to the tool.")
+    tool_input: Optional[Union[dict, str]] = Field(
+        None, description="Describes input to the tool."
+    )
     run_id: Optional[str] = Field(None, description="The langchain run ID")
 
     class Config:

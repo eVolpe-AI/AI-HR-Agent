@@ -62,10 +62,9 @@ class AgentMint:
         )
 
         self.history_config = HistoryManagement(
-            # TODO: ZMIEN TO
-            # management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
-            management_type=HistoryManagementType.SUMMARIZE_N_MESSAGES.value,
-            number_of_messages=2,
+            management_type=HistoryManagementType.KEEP_N_MESSAGES.value,
+            # management_type=HistoryManagementType.SUMMARIZE_N_MESSAGES.value,
+            number_of_messages=10,
             number_of_tokens=430,
         )
 
@@ -316,9 +315,6 @@ class AgentMint:
 
             case "on_tool_start":
                 if self.is_advanced:
-                    print(
-                        f"Tool start event data: \n {event['name']}, {event['data']['input']}\n"
-                    )
                     output = AgentMessage(
                         type=AgentMessageType.TOOL_START,
                         tool_name=event["name"],
@@ -346,9 +342,14 @@ class AgentMint:
                     case "llm_response":
                         response = event["data"].get("response")
                         if not response.tool_calls and "silent" not in event["tags"]:
+                            response_text = (
+                                response.content
+                                if isinstance(response.content, str)
+                                else response.content[0]["text"]
+                            )
                             output = AgentMessage(
                                 type=AgentMessageType.LLM_TEXT,
-                                content=response.content,
+                                content=response_text,
                             )
                     case _:
                         logger.warning(f"Unknown custom event: {event['name']}")

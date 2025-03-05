@@ -125,11 +125,10 @@ async def get():
 
 @api.post("/feedback")
 async def feedback(feedback: Feedback):
-    print(f"Feedback recieved: {feedback}")
     try:
         save_feedback(feedback)
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error sending feedback: {e}")
 
 
 @api.websocket("/{user_id}/{chat_id}/{token}")
