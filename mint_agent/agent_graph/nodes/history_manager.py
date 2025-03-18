@@ -47,7 +47,7 @@ def clear_message_history(messages: list[Any]) -> tuple[list[Any], list[Any]]:
     return messages_to_delete, messages_to_summarize
 
 
-def history_manager(state: GraphState, config: RunnableConfig) -> GraphState:
+async def history_manager(state: GraphState, config: RunnableConfig) -> GraphState:
     messages = state["messages"]
     history_config = state["history_config"]
 
@@ -97,11 +97,10 @@ def history_manager(state: GraphState, config: RunnableConfig) -> GraphState:
             raise ValueError(f"Invalid history type {history_config['type']}")
 
     if messages_to_summarize:
-        summary = asyncio.run(
-            prepare_summary(
-                messages_to_summarize, state, chat_id=chat_id, user_id=user_id
-            )
+        summary = await prepare_summary(
+            messages_to_summarize, state, chat_id=chat_id, user_id=user_id
         )
+
         return {
             "messages": new_messages,
             "conversation_summary": summary,

@@ -37,7 +37,15 @@ class ChatFactory:
                     "cache_reads": 0.075,
                 },
                 "model_rank": 1,
-            }
+            },
+            "gpt-4o-2024-11-20": {
+                "pricing": {
+                    "input_tokens": 2.50,
+                    "output_tokens": 10.00,
+                    "cache_reads": 1.25,
+                },
+                "model_rank": 2,
+            },
         },
     }
 

@@ -3,6 +3,7 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from langfuse import Langfuse
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
@@ -33,9 +34,8 @@ def send_feedback_to_langfuse(feedback: Feedback):
             value="positive" if feedback.type == "positive" else "negative",
             comment=feedback.comment,
         )
-        print("Feedback sent successfully")
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error while sending feedback to langfuse: {e}")
 
 
 def save_feedback(feedback: Feedback):
@@ -49,4 +49,4 @@ def save_feedback(feedback: Feedback):
         )
         agent_db.save_user_feedback(feedback)
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error while saving feedback: {e}")
